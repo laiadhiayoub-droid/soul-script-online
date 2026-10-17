@@ -155,7 +155,7 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
       </div>
       {lightbox && image.data && <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out" onClick={()=>setLightbox(false)}>
         <img src={image.data} alt={page?.title} className="max-w-full max-h-full object-contain rounded-md"/>
-        <Button variant="ghost" size="icon" className="size-10" className="absolute top-4 end-4 text-white hover:bg-white/20" aria-label="إغلاق" onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
+        <Button variant="ghost" size="icon" className="size-10 absolute top-4 end-4 text-white hover:bg-white/20" aria-label="إغلاق" onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
       </div>}
     </DialogContent>
   </Dialog>;
