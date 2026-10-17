@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   BookOpen, LogOut, Plus, Search, ArrowUp, ArrowDown, Link2, Loader2, ImagePlus, X,
   NotebookPen, ShieldCheck, BookMarked, FileText, ArrowRight,
-  SlidersHorizontal, Star, Trash2, Share2, GraduationCap, Menu,
+  SlidersHorizontal, Star, Trash2, Share2, GraduationCap, Menu, Home, Wand2, ScanText,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,10 @@ import { BoundNotebookReader } from "@/components/BoundNotebookReader";
 import { nextPageNumber, orderedBookPages } from "@/lib/notebook";
 import { generateFormattedPage } from "@/lib/notebook.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { ThemeToggle, LanguageMenu } from "@/components/HeaderControls";
+import { ImageEditor } from "@/components/ImageEditor";
+import { useI18n } from "@/lib/i18n";
+import { DEFAULT_EDITS, processImage, extractUnitDomain, type ImageEdits } from "@/lib/image-process";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -112,6 +116,11 @@ function Index() {
   const [view, setView] = useState<View>("books");
   const [summarySubject, setSummarySubject] = useState("all");
   const [deleting, setDeleting] = useState<Lesson | null>(null);
+  const { t } = useI18n();
+  function goHome() {
+    setFilters(EMPTY_FILTERS); setBookQ(""); setOpenBook(null); setView("books"); setSummarySubject("all"); setMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const bookmarks = useQuery({
     queryKey: ["bookmarks", user?.id],
@@ -264,24 +273,28 @@ function Index() {
     <div className="min-h-screen">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-30">
         <div className="mx-auto max-w-5xl px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
-          <div className="size-10 shrink-0 rounded-lg bg-primary text-primary-foreground grid place-items-center">
-            <BookOpen className="size-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-extrabold text-base sm:text-lg leading-tight truncate">المكتبة الرقمية المدرسية</h1>
-            <p className="text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</p>
-          </div>
+          <button type="button" onClick={goHome} aria-label={t("home")} className="flex flex-1 min-w-0 items-center gap-2 sm:gap-3 text-start rounded-lg">
+            <span className="size-10 shrink-0 rounded-lg bg-primary text-primary-foreground grid place-items-center">
+              <BookOpen className="size-5" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-display font-extrabold text-base sm:text-lg leading-tight truncate">{t("appTitle")}</span>
+              <span className="block text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</span>
+            </span>
+          </button>
+          <ThemeToggle />
+          <LanguageMenu />
           {ready && (user ? (
             <>
               <div className="hidden md:flex items-center gap-2 shrink-0">
                 <span className="text-sm text-muted-foreground">{myProfile?.full_name}</span>
                 {isAdmin && (
                   <Button size="sm" variant="outline" asChild>
-                    <Link to="/admin"><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                    <Link to="/admin"><ShieldCheck className="size-4" /> {t("dashboard")}</Link>
                   </Button>
                 )}
                 <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
-                  <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
+                  <Plus className="size-4" /> {canPublish ? t("addLesson") : t("addSummary")}
                 </Button>
                 <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
                   <LogOut className="size-4" />
@@ -289,14 +302,14 @@ function Index() {
               </div>
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button size="icon" variant="outline" className="md:hidden shrink-0 size-11" aria-label="القائمة">
+                  <Button size="icon" variant="outline" className="md:hidden shrink-0 size-11" aria-label={t("menu")}>
                     <Menu className="size-5" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 flex flex-col gap-3 pt-12">
                   <SheetTitle className="text-start">{myProfile?.full_name || "القائمة"}</SheetTitle>
                   <Button className="h-12 justify-start" onClick={() => { setMenuOpen(false); setUploadOpen(true); }} disabled={needsName}>
-                    <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
+                    <Plus className="size-4" /> {canPublish ? t("addLesson") : t("addSummary")}
                   </Button>
                   {isAdmin && (
                     <Button className="h-12 justify-start" variant="outline" asChild>
@@ -304,15 +317,15 @@ function Index() {
                     </Button>
                   )}
                   <Button className="h-12 justify-start" variant="ghost" onClick={() => { setMenuOpen(false); signOut(); }}>
-                    <LogOut className="size-4" /> تسجيل الخروج
+                    <LogOut className="size-4" /> {t("signOut")}
                   </Button>
                 </SheetContent>
               </Sheet>
             </>
           ) : (
             <Button size="sm" className="shrink-0 h-10" onClick={signIn}>
-              <span className="sm:hidden">دخول Google</span>
-              <span className="hidden sm:inline">تسجيل الدخول باستخدام Google</span>
+              <span className="sm:hidden">{t("signInShort")}</span>
+              <span className="hidden sm:inline">{t("signIn")}</span>
             </Button>
           ))}
         </div>
@@ -407,22 +420,25 @@ function Index() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-baseline gap-2">
                 <h2 className="text-xl font-extrabold">
-                  {view === "books" ? "كراريس القسم" : view === "summaries" ? "الملخصات" : "مفضلاتي"}
+                  {view === "books" ? t("books") : view === "summaries" ? t("summaries") : t("favorites")}
                 </h2>
                 <span className="text-sm text-muted-foreground">
                   {view === "books" ? `${books.length} كراس` : view === "summaries" ? `${summaries.length} ملخص` : `${favoriteLessons.length} عنصر`}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <Button variant={view === "books" && !Object.values(filters).some((v) => v !== "all") ? "default" : "outline"} size="sm" onClick={goHome}>
+                  <Home className="size-4" /> {t("home")}
+                </Button>
                 <Button variant={view === "summaries" ? "default" : "outline"} size="sm" onClick={() => setView(view === "summaries" ? "books" : "summaries")}>
-                  <GraduationCap className="size-4" /> الملخصات
+                  <GraduationCap className="size-4" /> {t("summaries")}
                 </Button>
                 <Button variant={view === "favorites" ? "default" : "outline"} size="sm" onClick={() => setView(view === "favorites" ? "books" : "favorites")}>
-                  <Star className="size-4" /> مفضلاتي
+                  <Star className="size-4" /> {t("favorites")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setFilterOpen(true)}
                   className={Object.values(filters).some((v) => v !== "all") ? "border-primary text-primary" : ""}>
-                  <SlidersHorizontal className="size-4" /> تصفية
+                  <SlidersHorizontal className="size-4" /> {t("filter")}
                   {Object.values(filters).filter((v) => v !== "all").length > 0 && (
                     <Badge className="ms-1 px-1.5 py-0 text-[10px]">{Object.values(filters).filter((v) => v !== "all").length}</Badge>
                   )}
@@ -724,6 +740,9 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
   const [isCont, setIsCont] = useState(false);
   const [parentId, setParentId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [edits, setEdits] = useState<ImageEdits[]>([]);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const generate = useServerFn(generateFormattedPage);
   const [busy, setBusy] = useState(false);
@@ -734,7 +753,7 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
 
   function resetForm() {
     setTitle(""); setDomain(""); setUnit(""); setIsCont(false); setParentId("");
-    setFiles([]); setType(canPublishLessons ? "lesson" : "summary"); setSemester("s1"); setProgress("");
+    setFiles([]); setEdits([]); setType(canPublishLessons ? "lesson" : "summary"); setSemester("s1"); setProgress("");
   }
 
   async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -747,6 +766,21 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
         }),
       ]);
     } finally { if (timer) clearTimeout(timer); }
+  }
+
+  async function runOcr(file: File) {
+    if (domain.trim() && unit.trim()) return;
+    setOcrBusy(true);
+    try {
+      const { recognize } = await import("tesseract.js");
+      const canvas = await (await import("@/lib/image-process")).renderEdited(file, DEFAULT_EDITS, 1600);
+      const { data } = await recognize(canvas, "ara+spa+fra+eng");
+      const found = extractUnitDomain(data.text);
+      if (found.unit) setUnit((u) => u.trim() ? u : found.unit);
+      if (found.domain) setDomain((d) => d.trim() ? d : found.domain);
+      if (found.unit || found.domain) toast.success("تم استخراج الوحدة/الميدان من الصورة — راجعها قبل الحفظ");
+    } catch { /* OCR is optional */ }
+    finally { setOcrBusy(false); }
   }
 
   async function submit() {
@@ -765,10 +799,11 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
       const rows = [];
       for (const [i, file] of files.entries()) {
         setProgress(`رفع الصفحة ${i+1} من ${files.length}`);
-        const blob = await withTimeout(compressImage(file), 30000, "compress");
-        const path = `${userId}/${crypto.randomUUID()}.jpg`;
+        const blob = await withTimeout(processImage(file, edits[i] ?? DEFAULT_EDITS), 30000, "compress");
+        const ext = blob.type === "image/webp" ? "webp" : "jpg";
+        const path = `${userId}/${crypto.randomUUID()}.${ext}`;
         const up = await withTimeout(
-          supabase.storage.from("lessons-images").upload(path, blob, { contentType: "image/jpeg" }),
+          supabase.storage.from("lessons-images").upload(path, blob, { contentType: blob.type }),
           60000, "upload",
         );
         if (up.error) throw up.error;
@@ -825,9 +860,9 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{SEMESTERS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
               </Select></div>
-            <div className="space-y-1.5"><Label>الميدان / المجال</Label>
+            <div className="space-y-1.5"><Label className="flex items-center gap-1">الميدان / المجال {ocrBusy && <ScanText className="size-3 animate-pulse text-primary" aria-label="جارٍ قراءة الصورة" />}</Label>
               <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Gramática" /></div>
-            <div className="space-y-1.5"><Label>الوحدة</Label>
+            <div className="space-y-1.5"><Label className="flex items-center gap-1">الوحدة {ocrBusy && <ScanText className="size-3 animate-pulse text-primary" />}</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unidad 1" /></div>
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -843,18 +878,27 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
           <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-5 cursor-pointer hover:bg-secondary text-sm text-muted-foreground">
             <ImagePlus className="size-6" /> إضافة صور صفحات الكراس
             <input type="file" accept="image/*" multiple disabled={busy} className="hidden" onChange={(e) => {
-              setFiles(previous=>[...previous,...Array.from(e.target.files ?? [])].filter(f=>f.type.startsWith("image/")));
+              const added = Array.from(e.target.files ?? []).filter(f=>f.type.startsWith("image/"));
+              const first = files.length === 0 ? added[0] : undefined;
+              setFiles(previous=>[...previous,...added]);
+              setEdits(previous=>[...previous,...added.map(()=>DEFAULT_EDITS)]);
+              if (first) void runOcr(first);
               e.target.value="";
             }} />
           </label>
           <ol className="space-y-2">
             {files.map((file,i)=><li key={`${file.name}-${i}`} className="flex items-center gap-2 rounded-md border p-2 text-sm">
               <span className="text-muted-foreground shrink-0">{i+1}</span><span className="flex-1 min-w-0 truncate">{file.name}</span>
-              <Button size="icon" variant="ghost" disabled={busy || i===0} aria-label={`تقديم الصفحة ${i+1}`} onClick={()=>setFiles(prev=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;})}><ArrowUp className="size-4"/></Button>
-              <Button size="icon" variant="ghost" disabled={busy || i===files.length-1} aria-label={`تأخير الصفحة ${i+1}`} onClick={()=>setFiles(prev=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;})}><ArrowDown className="size-4"/></Button>
-              <Button size="icon" variant="ghost" disabled={busy} aria-label={`حذف الصورة ${i+1}`} onClick={()=>setFiles(prev=>prev.filter((_,j)=>j!==i))}><X className="size-4"/></Button>
+              <Button size="icon" variant="ghost" disabled={busy} aria-label={`تعديل الصورة ${i+1}`} onClick={()=>setEditing(i)}><Wand2 className="size-4"/></Button>
+              <Button size="icon" variant="ghost" disabled={busy || i===0} aria-label={`تقديم الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowUp className="size-4"/></Button>
+              <Button size="icon" variant="ghost" disabled={busy || i===files.length-1} aria-label={`تأخير الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowDown className="size-4"/></Button>
+              <Button size="icon" variant="ghost" disabled={busy} aria-label={`حذف الصورة ${i+1}`} onClick={()=>{setFiles(prev=>prev.filter((_,j)=>j!==i));setEdits(prev=>prev.filter((_,j)=>j!==i));}}><X className="size-4"/></Button>
             </li>)}
           </ol>
+          {files.length > 0 && <p className="text-[11px] text-muted-foreground">تُحسَّن الصور تلقائياً (تباين ووضوح) وتُضغط بصيغة WebP. اضغط <Wand2 className="inline size-3"/> للقص والتدوير وتنظيف الخلفية.</p>}
+          <ImageEditor file={editing !== null ? files[editing] ?? null : null} edits={editing !== null ? edits[editing] ?? DEFAULT_EDITS : DEFAULT_EDITS}
+            open={editing !== null} onOpenChange={(o)=>{ if(!o) setEditing(null); }}
+            onSave={(e)=>{ const i=editing; if(i!==null) setEdits(prev=>prev.map((x,j)=>j===i?e:x)); }} />
           {progress && <p role="status" className="text-sm text-muted-foreground">{progress}</p>}
           <Button className="w-full" onClick={submit} disabled={busy}>
             {busy && <Loader2 className="animate-spin size-4" />} حفظ في الكراس
