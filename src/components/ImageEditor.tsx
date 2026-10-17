@@ -28,7 +28,7 @@ export function ImageEditor({ file, edits, open, onOpenChange, onSave }: {
     <div className="space-y-1">
       <Label className="text-xs">{label}: {draft.crop[side]}%</Label>
       <Slider min={0} max={40} step={1} value={[draft.crop[side]]}
-        onValueChange={([v]) => setDraft((d) => ({ ...d, crop: { ...d.crop, [side]: v } }))} />
+        onValueChange={([v]) => setDraft((d) => ({ ...d, crop: { ...d.crop, [side]: v ?? 0 } }))} />
     </div>
   );
 
@@ -52,7 +52,7 @@ export function ImageEditor({ file, edits, open, onOpenChange, onSave }: {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">التباين: {draft.contrast.toFixed(2)}</Label>
-          <Slider min={0.5} max={2} step={0.05} value={[draft.contrast]} onValueChange={([v]) => setDraft((d) => ({ ...d, contrast: v }))} />
+          <Slider min={0.5} max={2} step={0.05} value={[draft.contrast]} onValueChange={([v]) => setDraft((d) => ({ ...d, contrast: v ?? 1 }))} />
         </div>
         <p className="text-xs font-bold text-muted-foreground">قصّ الحواف</p>
         <div className="grid grid-cols-2 gap-3">

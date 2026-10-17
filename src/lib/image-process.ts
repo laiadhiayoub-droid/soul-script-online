@@ -15,9 +15,9 @@ export const DEFAULT_EDITS: ImageEdits = {
 /** Percentile-based level stretch: maps [lo, hi] luminance to [0, 255]. */
 export function levels(hist: number[], total: number): [number, number] {
   let acc = 0, lo = 0, hi = 255;
-  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= total * 0.02) { lo = i; break; } }
+  for (let i = 0; i < 256; i++) { acc += hist[i]!; if (acc >= total * 0.02) { lo = i; break; } }
   acc = 0;
-  for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= total * 0.02) { hi = i; break; } }
+  for (let i = 255; i >= 0; i--) { acc += hist[i]!; if (acc >= total * 0.02) { hi = i; break; } }
   if (hi - lo < 40) return [0, 255];
   return [lo, hi];
 }
@@ -43,17 +43,17 @@ export async function renderEdited(file: Blob, edits: ImageEdits, max = 1800): P
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const d = img.data, n = d.length / 4;
   const hist = new Array(256).fill(0);
-  for (let i = 0; i < d.length; i += 4) hist[(d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0]++;
+  for (let i = 0; i < d.length; i += 4) hist[(d[i]! * 0.299 + d[i + 1]! * 0.587 + d[i + 2]! * 0.114) | 0]++;
   const [lo, hi] = levels(hist, n);
   const k = 255 / (hi - lo);
   for (let i = 0; i < d.length; i += 4) {
     for (let j = 0; j < 3; j++) {
-      let v = (d[i + j] - lo) * k;
+      let v = (d[i + j]! - lo) * k;
       v = (v - 128) * edits.contrast + 128;
       d[i + j] = v < 0 ? 0 : v > 255 ? 255 : v;
     }
     if (edits.cleanup) {
-      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!;
       const lum = r * 0.299 + g * 0.587 + b * 0.114;
       const sat = Math.max(r, g, b) - Math.min(r, g, b);
       // Light, low-saturation pixels are paper/shadow: whiten them; keep coloured ink.
