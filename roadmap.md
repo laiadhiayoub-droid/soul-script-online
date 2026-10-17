@@ -15,3 +15,9 @@
 - [x] In-notebook grouping by semester then unit.
 - [x] Shareable link copy (?lesson=<id> deep link) + image lightbox on click.
 - [x] Download button uses fetch-blob direct download.
+
+# Header, image tools & OCR
+- [x] Home tab + clickable logo reset filters.
+- [x] Dark/light toggle and language menu (ar/es/en/fr for header & nav).
+- [x] Auto-enhance + WebP compression; crop/rotate/contrast/cleanup editor.
+- [x] Browser OCR auto-fill of unit/domain (editable).
