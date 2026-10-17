@@ -507,8 +507,8 @@ function Index() {
           <DialogHeader><DialogTitle className="pe-8">تأكيد الحذف</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">هل أنت متأكد من الحذف؟ سيُحذف «{deleting?.title}» وكل صفحاته التابعة نهائياً.</p>
           <div className="flex flex-col-reverse sm:flex-row gap-2">
-            <Button variant="destructive" className="flex-1 h-11" onClick={deleteLesson}>نعم، احذف</Button>
-            <Button variant="outline" className="flex-1 h-11" onClick={() => setDeleting(null)}>إلغاء</Button>
+            <Button variant="destructive" className="h-11 sm:flex-1" onClick={deleteLesson}>نعم، احذف</Button>
+            <Button variant="outline" className="h-11 sm:flex-1" onClick={() => setDeleting(null)}>إلغاء</Button>
           </div>
         </DialogContent>
       </Dialog>
