@@ -31,7 +31,7 @@ CREATE POLICY "lessons readable by signed in" ON public.lessons FOR SELECT TO au
 CREATE POLICY "update own lessons" ON public.lessons FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "delete own lessons" ON public.lessons FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
-CREATE TYPE public.app_role AS ENUM ('admin', 'writer', 'student');
+CREATE TYPE public.app_role AS ENUM ('admin', 'writer', 'student', 'subscriber');
 CREATE TABLE public.user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
