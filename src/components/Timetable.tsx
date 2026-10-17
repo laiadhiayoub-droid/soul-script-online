@@ -37,13 +37,13 @@ export function Timetable() {
           <span className="text-sm font-medium text-muted-foreground">— {day}</span>
         </h2>
         <button onClick={() => setFull((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-full bg-school px-4 py-1.5 text-sm font-medium text-school-foreground hover:opacity-90">
+          className="inline-flex w-full sm:w-auto justify-center items-center gap-1 rounded-full min-h-10 bg-school px-4 py-1.5 text-sm font-medium text-school-foreground hover:opacity-90">
           {full ? "إغلاق جدول الأسبوع" : "عرض جدول الأسبوع كاملاً"}
           <ChevronDown className={cn("size-4 transition", full && "rotate-180")} />
         </button>
       </div>
 
-      <ol className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+      <ol className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {PERIODS.map((p, i) => (
           <Fragment key={p.n}>
           {p.n === 5 && (
@@ -62,7 +62,24 @@ export function Timetable() {
       </ol>
 
       {full && (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <div className="space-y-3 sm:hidden">
+          {DAYS.map((d) => (
+            <div key={d} className={cn("rounded-lg border bg-card p-3 space-y-2", d === day && "ring-2 ring-accent")}>
+              <h3 className="font-bold">{d}</h3>
+              <ul className="space-y-1.5">
+                {mergeRow(SCHEDULE[d]).map((b) => (
+                  <li key={b.start} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
+                    <span className="text-xs text-muted-foreground" dir="ltr">{PERIODS[b.start]?.time.split("-")[0]}–{PERIODS[b.start + b.span - 1]?.time.split("-")[1]}</span>
+                    <Cell subject={b.span > 1 ? `${b.subject} (${b.span}سا)` : b.subject} compact />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+      {full && (
+        <div className="hidden sm:block overflow-x-auto rounded-lg border bg-card">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="bg-school/10">
