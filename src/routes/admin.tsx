@@ -203,7 +203,7 @@ function UsersPanel() {
           </SelectContent>
         </Select>
       </div>
-      <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); ban(banEmail); }}>
+      <form className="flex flex-col sm:flex-row gap-2" onSubmit={(e) => { e.preventDefault(); ban(banEmail); }}>
         <Input dir="ltr" type="email" className="bg-card" value={banEmail} onChange={(e) => setBanEmail(e.target.value)} placeholder="email@example.com" />
         <Button type="submit" variant="destructive"><Ban className="size-4" /> حظر بالبريد</Button>
       </form>
@@ -214,7 +214,7 @@ function UsersPanel() {
             const writer = u.roles.includes("writer");
             return (
               <li key={u.id} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3">
-                <div className="flex-1 min-w-[180px]">
+                <div className="flex-1 min-w-0 basis-full sm:basis-auto">
                   <p className="font-bold truncate flex items-center gap-2">
                     {u.full_name || "بدون اسم"}
                     {u.banned && <Badge variant="destructive">محظور</Badge>}
@@ -357,8 +357,8 @@ function LessonsPanel() {
               <p className="font-bold truncate">{l.title}</p>
               <p className="text-xs text-muted-foreground">{subjectLabel(l.subject)} · {contentTypeLabel(l.content_type)} · {data.data?.names.get(l.user_id) || "تلميذ"}</p>
             </div>
-            <Button size="icon" variant="ghost" aria-label="تعديل" onClick={() => setEdit(l)}><Pencil className="size-4" /></Button>
-            <Button size="icon" variant="ghost" className="text-destructive" aria-label="حذف" onClick={() => del(l)}><Trash2 className="size-4" /></Button>
+            <Button size="icon" variant="ghost" className="size-10 shrink-0" aria-label="تعديل" onClick={() => setEdit(l)}><Pencil className="size-4" /></Button>
+            <Button size="icon" variant="ghost" className="size-10 shrink-0 text-destructive" aria-label="حذف" onClick={() => del(l)}><Trash2 className="size-4" /></Button>
           </li>
         ))}
         {data.isSuccess && filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد دروس.</p>}
@@ -387,7 +387,7 @@ function EditLessonDialog({ lesson, onClose, onDone }: { lesson: L; onClose: () 
         <form onSubmit={save} className="space-y-3">
           <Label>العنوان</Label>
           <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Select value={f.subject} onValueChange={(v) => setF({ ...f, subject: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{SUBJECTS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>

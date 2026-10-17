@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   BookOpen, LogOut, Plus, Search, ArrowUp, ArrowDown, Link2, Loader2, ImagePlus, X,
   NotebookPen, ShieldCheck, BookMarked, FileText, ArrowRight,
-  SlidersHorizontal, Star, Trash2, Share2, GraduationCap,
+  SlidersHorizontal, Star, Trash2, Share2, GraduationCap, Menu,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -105,6 +106,7 @@ function Index() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [bookQ, setBookQ] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [zoom, setZoom] = useState<Lesson | null>(null);
   const [openBook, setOpenBook] = useState<Book | null>(null);
   const [view, setView] = useState<View>("books");
@@ -261,31 +263,57 @@ function Index() {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-30">
-        <div className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-primary text-primary-foreground grid place-items-center">
+        <div className="mx-auto max-w-5xl px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+          <div className="size-10 shrink-0 rounded-lg bg-primary text-primary-foreground grid place-items-center">
             <BookOpen className="size-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-extrabold text-lg leading-tight">المكتبة الرقمية المدرسية</h1>
-            <p className="text-xs text-muted-foreground">2 ثانوي · لغات أجنبية · Español</p>
+            <h1 className="font-extrabold text-base sm:text-lg leading-tight truncate">المكتبة الرقمية المدرسية</h1>
+            <p className="text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</p>
           </div>
           {ready && (user ? (
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-sm text-muted-foreground">{myProfile?.full_name}</span>
-              {isAdmin && (
-                <Button size="sm" variant="outline" asChild>
-                  <Link to="/admin"><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+            <>
+              <div className="hidden md:flex items-center gap-2 shrink-0">
+                <span className="text-sm text-muted-foreground">{myProfile?.full_name}</span>
+                {isAdmin && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/admin"><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
+                  <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
                 </Button>
-              )}
-              <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
-                <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
-              </Button>
-              <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
-                <LogOut className="size-4" />
-              </Button>
-            </div>
+                <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
+                  <LogOut className="size-4" />
+                </Button>
+              </div>
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button size="icon" variant="outline" className="md:hidden shrink-0 size-11" aria-label="القائمة">
+                    <Menu className="size-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 flex flex-col gap-3 pt-12">
+                  <SheetTitle className="text-start">{myProfile?.full_name || "القائمة"}</SheetTitle>
+                  <Button className="h-12 justify-start" onClick={() => { setMenuOpen(false); setUploadOpen(true); }} disabled={needsName}>
+                    <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
+                  </Button>
+                  {isAdmin && (
+                    <Button className="h-12 justify-start" variant="outline" asChild>
+                      <Link to="/admin" onClick={() => setMenuOpen(false)}><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                    </Button>
+                  )}
+                  <Button className="h-12 justify-start" variant="ghost" onClick={() => { setMenuOpen(false); signOut(); }}>
+                    <LogOut className="size-4" /> تسجيل الخروج
+                  </Button>
+                </SheetContent>
+              </Sheet>
+            </>
           ) : (
-            <Button size="sm" onClick={signIn}>تسجيل الدخول باستخدام Google</Button>
+            <Button size="sm" className="shrink-0 h-10" onClick={signIn}>
+              <span className="sm:hidden">دخول Google</span>
+              <span className="hidden sm:inline">تسجيل الدخول باستخدام Google</span>
+            </Button>
           ))}
         </div>
       </header>
@@ -460,7 +488,7 @@ function Index() {
                 لا توجد كراريس مطابقة بعد.
               </div>
             ) : (
-              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {books.map((b) => (
                   <BookCover key={`${b.userId}:${b.subject}`} book={b} onOpen={() => setOpenBook(b)} />
                 ))}
@@ -478,9 +506,9 @@ function Index() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle className="pe-8">تأكيد الحذف</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">هل أنت متأكد من الحذف؟ سيُحذف «{deleting?.title}» وكل صفحاته التابعة نهائياً.</p>
-          <div className="flex gap-2">
-            <Button variant="destructive" className="flex-1" onClick={deleteLesson}>نعم، احذف</Button>
-            <Button variant="outline" className="flex-1" onClick={() => setDeleting(null)}>إلغاء</Button>
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button variant="destructive" className="flex-1 h-11" onClick={deleteLesson}>نعم، احذف</Button>
+            <Button variant="outline" className="flex-1 h-11" onClick={() => setDeleting(null)}>إلغاء</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -508,7 +536,7 @@ function BookCover({ book, onOpen }: { book: Book; onOpen: () => void }) {
         <span className="absolute top-3 end-3 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-accent-foreground shadow-sm animate-pulse">جديد</span>
       )}
       <div className="p-5 ps-8 space-y-4 min-h-44 flex flex-col">
-        <BookMarked className="size-7 text-primary transition-transform duration-300 group-hover:scale-110" />
+        <BookMarked className="size-10 sm:size-8 text-primary transition-transform duration-300 group-hover:scale-110" />
         <div className="flex-1 space-y-1.5">
           <Badge variant="secondary" className="text-[10px]">{sub?.sub || "مادة"}</Badge>
           <h3 className="font-extrabold text-base leading-snug">{sub?.label ?? book.subject}</h3>
@@ -617,29 +645,29 @@ function LessonRow({ lesson: l, parent, author, starred, onStar, onShare, onDele
           <span className="block">{new Date(l.created_at).toLocaleDateString("ar-DZ")}</span>
         </span>
       </button>
-      <span className="flex flex-col gap-1 shrink-0">
+      <span className="flex flex-col gap-1.5 shrink-0">
         {onStar && (
-          <Button size="icon" variant="ghost" className="size-7" onClick={onStar}
+          <Button size="icon" variant="ghost" className="size-10 sm:size-8" onClick={onStar}
             aria-label={starred ? "إزالة من المفضلة" : "إضافة للمفضلة"}>
             <Star className={`size-4 ${starred ? "fill-accent stroke-accent" : ""}`} />
           </Button>
         )}
         {onShare && (
-          <Button size="icon" variant="ghost" className="size-7" onClick={onShare} aria-label="نسخ الرابط">
+          <Button size="icon" variant="ghost" className="size-10 sm:size-8" onClick={onShare} aria-label="نسخ الرابط">
             <Share2 className="size-3.5" />
           </Button>
         )}
         {onDelete && (
-          <Button size="icon" variant="ghost" className="size-7 text-destructive hover:bg-destructive/10" onClick={onDelete} aria-label="حذف">
+          <Button size="icon" variant="ghost" className="size-10 sm:size-8 text-destructive hover:bg-destructive/10" onClick={onDelete} aria-label="حذف">
             <Trash2 className="size-3.5" />
           </Button>
         )}
       </span>
       {controls && (
-        <span className="flex flex-col gap-1 shrink-0">
-          <Button size="icon" variant="outline" className="size-7" disabled={!controls.up}
+        <span className="flex flex-col gap-1.5 shrink-0">
+          <Button size="icon" variant="outline" className="size-10 sm:size-8" disabled={!controls.up}
             onClick={controls.up} aria-label="للأعلى"><ArrowUp className="size-3.5" /></Button>
-          <Button size="icon" variant="outline" className="size-7" disabled={!controls.down}
+          <Button size="icon" variant="outline" className="size-10 sm:size-8" disabled={!controls.down}
             onClick={controls.down} aria-label="للأسفل"><ArrowDown className="size-3.5" /></Button>
         </span>
       )}
@@ -774,12 +802,12 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
 
   return (
     <Dialog open={open} onOpenChange={o => {if(!busy)onOpenChange(o);}}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle className="pe-8">إضافة درس أو ملخص</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5"><Label>عنوان الدرس *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="El pretérito indefinido" /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label>المادة</Label>
               <Select value={subject} onValueChange={(v) => { setSubject(v); setParentId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
