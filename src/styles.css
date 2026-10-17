@@ -72,6 +72,33 @@
   --shadow-soft: 0 1px 2px oklch(0.3 0.05 40 / 6%), 0 8px 24px -12px oklch(0.3 0.05 40 / 18%);
 }
 
+.dark {
+  --background: oklch(0.17 0.012 60);
+  --foreground: oklch(0.94 0.012 85);
+  --card: oklch(0.21 0.014 60);
+  --card-foreground: oklch(0.94 0.012 85);
+  --popover: oklch(0.21 0.014 60);
+  --popover-foreground: oklch(0.94 0.012 85);
+  --primary: oklch(0.68 0.16 32);
+  --primary-foreground: oklch(0.15 0.02 40);
+  --secondary: oklch(0.27 0.015 60);
+  --secondary-foreground: oklch(0.92 0.012 85);
+  --muted: oklch(0.25 0.012 60);
+  --muted-foreground: oklch(0.72 0.02 80);
+  --accent: oklch(0.75 0.14 85);
+  --accent-foreground: oklch(0.18 0.03 50);
+  --border: oklch(0.32 0.015 60);
+  --input: oklch(0.32 0.015 60);
+  --ring: oklch(0.68 0.16 32);
+  --paper: oklch(0.22 0.012 60);
+  --rule: oklch(0.6 0.05 240 / 22%);
+  --school-soft: oklch(0.26 0.03 120);
+  --shadow-sheet: 0 1px 0 var(--border), 0 12px 30px -18px oklch(0 0 0 / 60%);
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 30%), 0 8px 24px -12px oklch(0 0 0 / 50%);
+}
+html { transition: background-color 250ms ease, color 250ms ease; }
+body { transition: background-color 250ms ease, color 250ms ease; }
+
 @layer base {
   a, button, [role="button"] {
     transition-property: color, background-color, border-color, box-shadow, transform, opacity;
