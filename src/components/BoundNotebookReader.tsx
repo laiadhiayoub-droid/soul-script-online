@@ -93,14 +93,14 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
       <DialogTitle className="sr-only">{page?.title || "الكراس"}</DialogTitle>
       <div className="flex flex-wrap gap-2 items-center border-b p-4 px-12">
         <div className="min-w-0 w-full sm:w-auto sm:flex-1"><h2 className="font-bold break-words">{page?.title}</h2><p className="text-xs text-muted-foreground">صفحة {index+1} من {pages.length}</p></div>
-        <Button size="sm" variant={mode==="original"?"default":"outline"} onClick={()=>setMode("original")}><BookOpen className="size-4"/>الأصل</Button>
-        <Button size="sm" variant={mode==="formatted"?"default":"outline"} onClick={()=>setMode("formatted")}>{allowed?<FileText className="size-4"/>:<Lock className="size-4"/>}الكراس المنسّق</Button>
+        <Button size="sm" className="h-10" variant={mode==="original"?"default":"outline"} onClick={()=>setMode("original")}><BookOpen className="size-4"/>الأصل</Button>
+        <Button size="sm" className="h-10" variant={mode==="formatted"?"default":"outline"} onClick={()=>setMode("formatted")}>{allowed?<FileText className="size-4"/>:<Lock className="size-4"/>}الكراس المنسّق</Button>
       </div>
       {mode === "original" && <div className="flex justify-center gap-2 border-b p-2">
-        <Button variant="ghost" size="icon" aria-label="تكبير" onClick={()=>setScale(s=>Math.min(3,s+0.25))}><ZoomIn className="size-4"/></Button>
-        <Button variant="ghost" size="icon" aria-label="تصغير" onClick={()=>setScale(s=>Math.max(0.5,s-0.25))}><ZoomOut className="size-4"/></Button>
-        {image.data && <Button variant="ghost" size="icon" disabled={downloading} onClick={downloadImage} aria-label="تحميل">{downloading?<Loader2 className="size-4 animate-spin"/>:<Download className="size-4"/>}</Button>}
-        {image.data && <Button variant="ghost" size="icon" asChild><a href={image.data} target="_blank" rel="noreferrer" aria-label="فتح بالحجم الكامل"><ExternalLink className="size-4"/></a></Button>}
+        <Button variant="ghost" size="icon" className="size-10" aria-label="تكبير" onClick={()=>setScale(s=>Math.min(3,s+0.25))}><ZoomIn className="size-4"/></Button>
+        <Button variant="ghost" size="icon" className="size-10" aria-label="تصغير" onClick={()=>setScale(s=>Math.max(0.5,s-0.25))}><ZoomOut className="size-4"/></Button>
+        {image.data && <Button variant="ghost" size="icon" className="size-10" disabled={downloading} onClick={downloadImage} aria-label="تحميل">{downloading?<Loader2 className="size-4 animate-spin"/>:<Download className="size-4"/>}</Button>}
+        {image.data && <Button variant="ghost" size="icon" className="size-10" asChild><a href={image.data} target="_blank" rel="noreferrer" aria-label="فتح بالحجم الكامل"><ExternalLink className="size-4"/></a></Button>}
       </div>}
       {editing && <div className="flex justify-center gap-2 border-b p-2">
         <Button size="sm" onClick={saveEdit} disabled={saving}>{saving?<Loader2 className="size-4 animate-spin"/>:<Check className="size-4"/>}حفظ التعديلات</Button>
@@ -149,13 +149,13 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
         </div>}
       </div>
       <div className="flex items-center justify-between border-t p-3">
-        <Button variant="outline" size="sm" disabled={index===0 || busy} onClick={()=>{setIndex(i=>i-1);setFailure(null);}}><ArrowRight className="size-4"/>السابقة</Button>
+        <Button variant="outline" size="sm" className="h-10" disabled={index===0 || busy} onClick={()=>{setIndex(i=>i-1);setFailure(null);}}><ArrowRight className="size-4"/>السابقة</Button>
         <span className="text-sm text-muted-foreground">{index+1} / {pages.length}</span>
-        <Button variant="outline" size="sm" disabled={index>=pages.length-1 || busy} onClick={()=>{setIndex(i=>i+1);setFailure(null);}}>التالية<ArrowLeft className="size-4"/></Button>
+        <Button variant="outline" size="sm" className="h-10" disabled={index>=pages.length-1 || busy} onClick={()=>{setIndex(i=>i+1);setFailure(null);}}>التالية<ArrowLeft className="size-4"/></Button>
       </div>
       {lightbox && image.data && <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out" onClick={()=>setLightbox(false)}>
         <img src={image.data} alt={page?.title} className="max-w-full max-h-full object-contain rounded-md"/>
-        <Button variant="ghost" size="icon" className="absolute top-4 end-4 text-white hover:bg-white/20" aria-label="إغلاق" onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
+        <Button variant="ghost" size="icon" className="size-10 absolute top-4 end-4 text-white hover:bg-white/20" aria-label="إغلاق" onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
       </div>}
     </DialogContent>
   </Dialog>;
