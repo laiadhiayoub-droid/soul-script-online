@@ -1,5 +1,62 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792225596453,
+      "tag": "0000_notebook_reads_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792226793365,
+      "tag": "0001_add_subscriber_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792226809569,
+      "tag": "0002_secure_formatted_notebooks",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792227014084,
+      "tag": "0003_restrict_formatted_page_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792237496910,
+      "tag": "0004_add_lesson_semester",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792239397975,
+      "tag": "0005_create_bookmarks",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792239577891,
+      "tag": "0006_students_insert_summaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792239582739,
+      "tag": "0007_students_upload_summary_images",
+      "breakpoints": true
+    }
+  ]
 }
