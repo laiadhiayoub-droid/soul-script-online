@@ -261,31 +261,57 @@ function Index() {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-30">
-        <div className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-primary text-primary-foreground grid place-items-center">
+        <div className="mx-auto max-w-5xl px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+          <div className="size-10 shrink-0 rounded-lg bg-primary text-primary-foreground grid place-items-center">
             <BookOpen className="size-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-extrabold text-lg leading-tight">المكتبة الرقمية المدرسية</h1>
-            <p className="text-xs text-muted-foreground">2 ثانوي · لغات أجنبية · Español</p>
+            <h1 className="font-extrabold text-base sm:text-lg leading-tight truncate">المكتبة الرقمية المدرسية</h1>
+            <p className="text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</p>
           </div>
           {ready && (user ? (
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-sm text-muted-foreground">{myProfile?.full_name}</span>
-              {isAdmin && (
-                <Button size="sm" variant="outline" asChild>
-                  <Link to="/admin"><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+            <>
+              <div className="hidden md:flex items-center gap-2 shrink-0">
+                <span className="text-sm text-muted-foreground">{myProfile?.full_name}</span>
+                {isAdmin && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/admin"><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
+                  <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
                 </Button>
-              )}
-              <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
-                <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
-              </Button>
-              <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
-                <LogOut className="size-4" />
-              </Button>
-            </div>
+                <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
+                  <LogOut className="size-4" />
+                </Button>
+              </div>
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button size="icon" variant="outline" className="md:hidden shrink-0 size-11" aria-label="القائمة">
+                    <Menu className="size-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 flex flex-col gap-3 pt-12">
+                  <SheetTitle className="text-start">{myProfile?.full_name || "القائمة"}</SheetTitle>
+                  <Button className="h-12 justify-start" onClick={() => { setMenuOpen(false); setUploadOpen(true); }} disabled={needsName}>
+                    <Plus className="size-4" /> {canPublish ? "إضافة درس" : "إضافة ملخص"}
+                  </Button>
+                  {isAdmin && (
+                    <Button className="h-12 justify-start" variant="outline" asChild>
+                      <Link to="/admin" onClick={() => setMenuOpen(false)}><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                    </Button>
+                  )}
+                  <Button className="h-12 justify-start" variant="ghost" onClick={() => { setMenuOpen(false); signOut(); }}>
+                    <LogOut className="size-4" /> تسجيل الخروج
+                  </Button>
+                </SheetContent>
+              </Sheet>
+            </>
           ) : (
-            <Button size="sm" onClick={signIn}>تسجيل الدخول باستخدام Google</Button>
+            <Button size="sm" className="shrink-0 h-10" onClick={signIn}>
+              <span className="sm:hidden">دخول Google</span>
+              <span className="hidden sm:inline">تسجيل الدخول باستخدام Google</span>
+            </Button>
           ))}
         </div>
       </header>
