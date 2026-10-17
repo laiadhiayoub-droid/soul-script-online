@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.lessons IS 'Notebook pages and summaries';

@@ -57,6 +57,13 @@
       "when": 1792239582739,
       "tag": "0007_students_upload_summary_images",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792249441242,
+      "tag": "0008_apply_copied_schema",
+      "breakpoints": true
     }
   ]
 }
