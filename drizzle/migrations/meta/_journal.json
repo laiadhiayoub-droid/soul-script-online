@@ -64,6 +64,13 @@
       "when": 1792249441242,
       "tag": "0008_apply_copied_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792309332853,
+      "tag": "0009_add_hidden_role",
+      "breakpoints": true
     }
   ]
 }
