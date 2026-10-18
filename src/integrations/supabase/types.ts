@@ -132,12 +132,15 @@ export type Database = {
         Row: {
           content_type: string
           created_at: string
+          description: string | null
           domain: string | null
+          grouped_pages: boolean
           id: string
           image_path: string
           order_index: number
           page_number: number
           parent_lesson_id: string | null
+          resource_links: string[]
           semester: string | null
           subject: string
           title: string
@@ -147,12 +150,15 @@ export type Database = {
         Insert: {
           content_type: string
           created_at?: string
+          description?: string | null
           domain?: string | null
+          grouped_pages?: boolean
           id?: string
           image_path: string
           order_index?: number
           page_number?: number
           parent_lesson_id?: string | null
+          resource_links?: string[]
           semester?: string | null
           subject: string
           title: string
@@ -162,12 +168,15 @@ export type Database = {
         Update: {
           content_type?: string
           created_at?: string
+          description?: string | null
           domain?: string | null
+          grouped_pages?: boolean
           id?: string
           image_path?: string
           order_index?: number
           page_number?: number
           parent_lesson_id?: string | null
+          resource_links?: string[]
           semester?: string | null
           subject?: string
           title?: string
@@ -248,6 +257,35 @@ export type Database = {
         }
         Relationships: []
       }
+      suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -293,6 +331,10 @@ export type Database = {
           roles: Database["public"]["Enums"]["app_role"][]
         }[]
       }
+      admin_set_hidden: {
+        Args: { _hidden: boolean; _user_id: string }
+        Returns: undefined
+      }
       admin_set_name: {
         Args: { _name: string; _user_id: string }
         Returns: undefined
@@ -321,6 +363,12 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      visible_author_ids: {
+        Args: never
+        Returns: {
+          id: string
+        }[]
       }
     }
     Enums: {
