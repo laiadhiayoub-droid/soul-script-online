@@ -30,6 +30,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { ThemeToggle, LanguageMenu } from "@/components/HeaderControls";
 import { ImageEditor } from "@/components/ImageEditor";
 import { useI18n } from "@/lib/i18n";
+import { SuggestionButton } from "@/components/Suggestions";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { pageBinding, displayEntries, groupPages, parseResourceLinks } from "@/lib/publishing";
 import { DEFAULT_EDITS, processImage, extractUnitDomain, type ImageEdits } from "@/lib/image-process";
 
 export const Route = createFileRoute("/")({
@@ -49,6 +53,7 @@ export const Route = createFileRoute("/")({
 type Lesson = {
   id: string; user_id: string; title: string; subject: string; content_type: string;
   domain: string | null; unit: string | null; page_number: number; semester: string | null;
+  description: string | null; resource_links: string[]; grouped_pages: boolean;
   parent_lesson_id: string | null; image_path: string; order_index: number; created_at: string;
 };
 type Profile = { id: string; full_name: string | null };
@@ -91,6 +96,11 @@ function Index() {
     },
   });
 
+  const visibleAuthors = useQuery({ queryKey: ["visible-authors", user?.id], enabled: !!user, queryFn: async () => {
+    const { data, error } = await supabase.rpc("visible_author_ids");
+    if (error) throw error;
+    return new Set(data.map(p => p.id));
+  }});
   const myProfile = profiles.data?.find((p) => p.id === user?.id);
   const roles = useQuery({
     queryKey: ["my-roles", user?.id],
@@ -173,13 +183,13 @@ function Index() {
     setZoom(target);
   }, [lessons.data, zoom]);
 
-  const nameOf = (id: string) => profiles.data?.find((p) => p.id === id)?.full_name || "تلميذ";
+  const nameOf = (id: string) => visibleAuthors.data?.has(id) ? profiles.data?.find((p) => p.id === id)?.full_name || "تلميذ" : "تلميذ";
 
   // Tier 1: book covers — one card per (student, subject) notebook
   const books = useMemo(() => {
     const cutoff = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
     const map = new Map<string, Book>();
-    for (const l of lessons.data ?? []) {
+    for (const l of displayEntries(lessons.data ?? [])) {
       if (filters.subject !== "all" && l.subject !== filters.subject) continue;
       if (filters.type !== "all" && l.content_type !== filters.type) continue;
       if (filters.semester !== "all" && l.semester !== filters.semester) continue;
@@ -208,7 +218,7 @@ function Index() {
   // Group notebook pages by semester, then by unit
   const groupedBookLessons = useMemo(() => {
     const groups: { semester: string; units: { unit: string; items: Lesson[] }[] }[] = [];
-    for (const l of bookLessons) {
+    for (const l of displayEntries(bookLessons)) {
       const s = l.semester || "none";
       const u = l.unit || "none";
       let sg = groups.find((g) => g.semester === s);
@@ -227,7 +237,7 @@ function Index() {
   }, [lessons.data]);
 
   const summaries = useMemo(() => {
-    return (lessons.data ?? [])
+    return displayEntries(lessons.data ?? [])
       .filter((l) => l.content_type === "summary" && (summarySubject === "all" || l.subject === summarySubject))
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
   }, [lessons.data, summarySubject]);
@@ -282,6 +292,7 @@ function Index() {
               <span className="block text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</span>
             </span>
           </button>
+          {user && <SuggestionButton userId={user.id} />}
           <ThemeToggle />
           <LanguageMenu />
           {ready && (user ? (
@@ -535,7 +546,7 @@ function Index() {
           myLessons={(lessons.data ?? []).filter((l) => l.user_id === user.id)}
           onDone={() => qc.invalidateQueries({ queryKey: ["lessons"] })} />
       )}
-      <BoundNotebookReader pages={bookLessons} initialId={zoom?.id ?? null} roles={roles.data ?? []} onClose={() => setZoom(null)} />
+      <BoundNotebookReader pages={zoom ? groupPages(bookLessons, zoom) : bookLessons} initialId={zoom?.id ?? null} roles={roles.data ?? []} onClose={() => setZoom(null)} />
     </div>
   );
 }
@@ -737,6 +748,9 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
   const [semester, setSemester] = useState<string>("s1");
   const [domain, setDomain] = useState("");
   const [unit, setUnit] = useState("");
+  const [description, setDescription] = useState("");
+  const [links, setLinks] = useState("");
+  const [grouped, setGrouped] = useState(true);
   const [isCont, setIsCont] = useState(false);
   const [parentId, setParentId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -752,7 +766,7 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
   const roots = notebook.filter((l) => !l.parent_lesson_id);
 
   function resetForm() {
-    setTitle(""); setDomain(""); setUnit(""); setIsCont(false); setParentId("");
+    setDescription(""); setLinks(""); setGrouped(true); setTitle(""); setDomain(""); setUnit(""); setIsCont(false); setParentId("");
     setFiles([]); setEdits([]); setType(canPublishLessons ? "lesson" : "summary"); setSemester("s1"); setProgress("");
   }
 
@@ -785,9 +799,11 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
 
   async function submit() {
     if (busy) return;
-    if (!title.trim()) { toast.error("عنوان الدرس مطلوب"); return; }
+    if (!title.trim()) { toast.error(canPublishLessons ? "عنوان الدرس مطلوب" : "عنوان الملخص مطلوب"); return; }
     if (!files.length) { toast.error("أضف صور الصفحات"); return; }
     if (isCont && !parentId) { toast.error("اختر الدرس السابق"); return; }
+    let resourceLinks: string[];
+    try { resourceLinks = parseResourceLinks(links); } catch { toast.error("أدخل روابط صحيحة تبدأ بـ https:// أو http://"); return; }
     setBusy(true);
     const uploadedPaths: string[] = [];
     let published = false;
@@ -808,15 +824,15 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
         );
         if (up.error) throw up.error;
         uploadedPaths.push(path);
-        rows.push({id: !parent && i===0 ? rootId : crypto.randomUUID(), user_id:userId,
-          title:title.trim(),subject,content_type:type,semester,domain:domain.trim() || null,unit:unit.trim() || null,
-          parent_lesson_id:parent || i>0 ? rootId : null,page_number:pageNumber+i,image_path:path,order_index:order+i});
+        rows.push({...pageBinding(i, grouped, rootId, parent?.id ?? null, pageNumber), user_id:userId,
+          title:title.trim(),subject,content_type:type,semester:canPublishLessons ? semester : null,domain:canPublishLessons ? domain.trim() || null : null,unit:canPublishLessons ? unit.trim() || null : null,
+          description:description.trim() || null, resource_links:resourceLinks,image_path:path,order_index:order+i});
       }
       const {error}=await supabase.from("lessons").insert(rows);
       if(error) throw error;
       published = true;
       onDone();
-      toast.success(`تم ربط ${rows.length} صفحة في الكراس`);
+      toast.success(type === "summary" ? "تم حفظ الملخص" : "تم حفظ الصفحات");
       // Success: reset the form, close the dialog, and let formatting continue in the background.
       resetForm();
       onOpenChange(false);
@@ -838,11 +854,11 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
   return (
     <Dialog open={open} onOpenChange={o => {if(!busy)onOpenChange(o);}}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="pe-8">إضافة درس أو ملخص</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="pe-8">{canPublishLessons ? "إضافة درس أو ملخص" : "إضافة ملخص"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1.5"><Label>عنوان الدرس *</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="El pretérito indefinido" /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5"><Label htmlFor="upload-title">{canPublishLessons ? "عنوان الدرس *" : "عنوان الملخص"}</Label>
+            <Input id="upload-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="El pretérito indefinido" /></div>
+          {canPublishLessons && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label>المادة</Label>
               <Select value={subject} onValueChange={(v) => { setSubject(v); setParentId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -864,35 +880,38 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
               <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Gramática" /></div>
             <div className="space-y-1.5"><Label className="flex items-center gap-1">الوحدة {ocrBusy && <ScanText className="size-3 animate-pulse text-primary" />}</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unidad 1" /></div>
-          </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+          </div>}
+          <div className="space-y-1.5"><Label htmlFor="summary-details">تفاصيل إضافية (اختياري)</Label><Textarea id="summary-details" value={description} onChange={e=>setDescription(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label htmlFor="resource-links">روابط خارجية (اختياري)</Label><Textarea id="resource-links" dir="ltr" value={links} onChange={e=>setLinks(e.target.value)} placeholder="https://youtube.com/watch?v=…" /></div>
+          {canPublishLessons && <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={isCont} onCheckedChange={(v) => setIsCont(!!v)} disabled={roots.length === 0} />
             تتمة / تابع لدرس سابق {roots.length === 0 && <span className="text-muted-foreground">(لا توجد دروس سابقة)</span>}
-          </label>
-          {isCont && (
+          </label>}
+          {canPublishLessons && isCont && (
             <Select value={parentId} onValueChange={setParentId}>
               <SelectTrigger><SelectValue placeholder="اختر الدرس السابق" /></SelectTrigger>
               <SelectContent>{roots.map((l) => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}</SelectContent>
             </Select>
           )}
           <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-5 cursor-pointer hover:bg-secondary text-sm text-muted-foreground">
-            <ImagePlus className="size-6" /> إضافة صور صفحات الكراس
+            <ImagePlus className="size-6" /> {canPublishLessons ? "إضافة صور صفحات الكراس" : "إضافة صور الملخص"}
             <input type="file" accept="image/*" multiple disabled={busy} className="hidden" onChange={(e) => {
               const added = Array.from(e.target.files ?? []).filter(f=>f.type.startsWith("image/"));
               const first = files.length === 0 ? added[0] : undefined;
               setFiles(previous=>[...previous,...added]);
               setEdits(previous=>[...previous,...added.map(()=>DEFAULT_EDITS)]);
-              if (first) void runOcr(first);
+              if (first && canPublishLessons) void runOcr(first);
               e.target.value="";
             }} />
           </label>
+          {files.length > 1 && <label className="flex items-center gap-3 text-sm py-2"><Switch checked={grouped} disabled={busy || isCont} onCheckedChange={setGrouped} />{type === "summary" ? "تجميع كملخص واحد" : "تجميع كدرس واحد"}</label>}
           <ol className="space-y-2">
-            {files.map((file,i)=><li key={`${file.name}-${i}`} className="flex items-center gap-2 rounded-md border p-2 text-sm">
-              <span className="text-muted-foreground shrink-0">{i+1}</span><span className="flex-1 min-w-0 truncate">{file.name}</span>
-              <Button size="icon" variant="ghost" disabled={busy} aria-label={`تعديل الصورة ${i+1}`} onClick={()=>setEditing(i)}><Wand2 className="size-4"/></Button>
-              <Button size="icon" variant="ghost" disabled={busy || i===0} aria-label={`تقديم الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowUp className="size-4"/></Button>
-              <Button size="icon" variant="ghost" disabled={busy || i===files.length-1} aria-label={`تأخير الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowDown className="size-4"/></Button>
-              <Button size="icon" variant="ghost" disabled={busy} aria-label={`حذف الصورة ${i+1}`} onClick={()=>{setFiles(prev=>prev.filter((_,j)=>j!==i));setEdits(prev=>prev.filter((_,j)=>j!==i));}}><X className="size-4"/></Button>
+            {files.map((file,i)=><li key={`${file.name}-${i}`} className="flex flex-wrap items-center gap-1 rounded-md border p-2 text-sm">
+              <span className="text-muted-foreground shrink-0">{i+1}</span><span className="flex-1 min-w-0 basis-[70%] truncate">{file.name}</span>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={`تعديل الصورة ${i+1}`} onClick={()=>setEditing(i)}><Wand2 className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===0} aria-label={`تقديم الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowUp className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===files.length-1} aria-label={`تأخير الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowDown className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={`حذف الصورة ${i+1}`} onClick={()=>{setFiles(prev=>prev.filter((_,j)=>j!==i));setEdits(prev=>prev.filter((_,j)=>j!==i));}}><X className="size-4"/></Button>
             </li>)}
           </ol>
           {files.length > 0 && <p className="text-[11px] text-muted-foreground">تُحسَّن الصور تلقائياً (تباين ووضوح) وتُضغط بصيغة WebP. اضغط <Wand2 className="inline size-3"/> للقص والتدوير وتنظيف الخلفية.</p>}
@@ -900,8 +919,8 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
             open={editing !== null} onOpenChange={(o)=>{ if(!o) setEditing(null); }}
             onSave={(e)=>{ const i=editing; if(i!==null) setEdits(prev=>prev.map((x,j)=>j===i?e:x)); }} />
           {progress && <p role="status" className="text-sm text-muted-foreground">{progress}</p>}
-          <Button className="w-full" onClick={submit} disabled={busy}>
-            {busy && <Loader2 className="animate-spin size-4" />} حفظ في الكراس
+          <Button className="w-full h-11" onClick={submit} disabled={busy}>
+            {busy && <Loader2 className="animate-spin size-4" />} {canPublishLessons ? "حفظ في الكراس" : "حفظ الملخص"}
           </Button>
         </div>
       </DialogContent>

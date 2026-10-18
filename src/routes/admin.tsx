@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SuggestionsPanel } from "@/components/Suggestions";
+import { ThemeToggle, LanguageMenu } from "@/components/HeaderControls";
 import { SUBJECTS, CONTENT_TYPES, subjectLabel, contentTypeLabel } from "@/lib/library";
 
 export const Route = createFileRoute("/admin")({
@@ -63,8 +65,9 @@ function AdminPage() {
 
   return (
     <div className="min-h-screen mx-auto max-w-5xl px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><ShieldCheck className="text-school" /> لوحة التحكم</h1>
+        <div className="flex items-center"><ThemeToggle /><LanguageMenu /></div>
         <Button variant="ghost" asChild><Link to="/"><ArrowRight className="size-4" /> المكتبة</Link></Button>
       </div>
       <Stats />
@@ -73,11 +76,13 @@ function AdminPage() {
           <TabsTrigger value="users">التلاميذ والصلاحيات</TabsTrigger>
           <TabsTrigger value="banned">الحسابات المحظورة</TabsTrigger>
           <TabsTrigger value="lessons">الكراريس والدروس</TabsTrigger>
+          <TabsTrigger value="suggestions">الاقتراحات</TabsTrigger>
           <TabsTrigger value="announce">شريط الإعلانات</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersPanel /></TabsContent>
         <TabsContent value="banned"><BannedPanel /></TabsContent>
         <TabsContent value="lessons"><LessonsPanel /></TabsContent>
+        <TabsContent value="suggestions"><SuggestionsPanel /></TabsContent>
         <TabsContent value="announce"><AnnouncePanel /></TabsContent>
       </Tabs>
     </div>
@@ -168,6 +173,14 @@ function UsersPanel() {
     qc.removeQueries({queryKey:["formatted-page"]});
     refresh();
   }
+  async function setHidden(id: string, hidden: boolean) {
+    setBusy(id);
+    const { error } = await supabase.rpc("admin_set_hidden", { _user_id: id, _hidden: hidden });
+    setBusy(null);
+    if (error) { toast.error("تعذّر تغيير الدور"); return; }
+    qc.invalidateQueries({ queryKey: ["profiles"] }); qc.invalidateQueries({ queryKey: ["visible-authors"] });
+    qc.invalidateQueries({ queryKey: ["my-roles"] }); refresh();
+  }
   async function ban(email: string) {
     if (!email.trim()) return;
     if (!confirm(`حظر ${email}؟`)) return;
@@ -199,6 +212,7 @@ function UsersPanel() {
             <SelectItem value="writer">الكتّاب</SelectItem>
             <SelectItem value="subscriber">المشتركون</SelectItem>
             <SelectItem value="admin">المشرفون</SelectItem>
+            <SelectItem value="hidden">مخفي</SelectItem>
             <SelectItem value="banned">المحظورون</SelectItem>
           </SelectContent>
         </Select>
@@ -236,6 +250,7 @@ function UsersPanel() {
                           onCheckedChange={v => setSubscriber(u.id, v)} />
                         مشترك
                       </label>
+                      <label className="flex items-center gap-2 text-sm"><Switch aria-label="مخفي" checked={u.roles.includes("hidden")} disabled={busy === u.id} onCheckedChange={v => setHidden(u.id,v)} />مخفي</label>
                     </div>
                     {u.banned
                       ? <Button size="sm" variant="outline" onClick={() => unban(u.email)}><Undo2 className="size-4" /> رفع الحظر</Button>

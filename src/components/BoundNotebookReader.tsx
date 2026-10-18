@@ -10,7 +10,7 @@ import { generateFormattedPage, updateFormattedPage } from "@/lib/notebook.funct
 import { canReadFormatted, LOCKED_NOTEBOOK_MESSAGE, notebookDocumentSchema, type NotebookDocument } from "@/lib/notebook";
 import { NotebookDiagram } from "@/components/NotebookDiagram";
 
-type Page = {id:string;title:string;image_path:string;subject:string};
+type Page = {id:string;title:string;image_path:string;subject:string;description?:string|null;resource_links?:string[]};
 export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:Page[];initialId:string|null;roles:string[];onClose:()=>void}) {
   const [index,setIndex] = useState(0);
   const [mode,setMode] = useState("original");
@@ -36,7 +36,7 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `${page.title}.jpg`;
+      a.href = url; a.download = `${page.title}.${blob.type === "image/webp" ? "webp" : "jpg"}`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 30000);
     } catch { toast.error("تعذّر تحميل الصورة"); } finally { setDownloading(false); }
@@ -96,6 +96,10 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
         <Button size="sm" className="h-10" variant={mode==="original"?"default":"outline"} onClick={()=>setMode("original")}><BookOpen className="size-4"/>الأصل</Button>
         <Button size="sm" className="h-10" variant={mode==="formatted"?"default":"outline"} onClick={()=>setMode("formatted")}>{allowed?<FileText className="size-4"/>:<Lock className="size-4"/>}الكراس المنسّق</Button>
       </div>
+      {(page?.description || page?.resource_links?.length) && <div className="border-b px-4 py-3 space-y-2 max-h-36 overflow-auto">
+        {page.description && <p className="text-sm whitespace-pre-wrap break-words">{page.description}</p>}
+        {page.resource_links?.filter(link=>/^https?:\/\//i.test(link)).map((link,i)=><a key={i} href={link} target="_blank" rel="noopener noreferrer" className="block text-primary underline text-sm break-all" dir="ltr">{link}</a>)}
+      </div>}
       {mode === "original" && <div className="flex justify-center gap-2 border-b p-2">
         <Button variant="ghost" size="icon" className="size-10" aria-label="تكبير" onClick={()=>setScale(s=>Math.min(3,s+0.25))}><ZoomIn className="size-4"/></Button>
         <Button variant="ghost" size="icon" className="size-10" aria-label="تصغير" onClick={()=>setScale(s=>Math.max(0.5,s-0.25))}><ZoomOut className="size-4"/></Button>
