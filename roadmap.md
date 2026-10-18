@@ -21,3 +21,12 @@
 - [x] Dark/light toggle and language menu (ar/es/en/fr for header & nav).
 - [x] Auto-enhance + WebP compression; crop/rotate/contrast/cleanup editor.
 - [x] Browser OCR auto-fill of unit/domain (editable).
+
+# Uploaded platform updates
+- [ ] Simplify student summaries and store optional descriptions/resource links.
+- [ ] Reorder uploads and bind grouped pages into one card.
+- [ ] Translate the full interface in four languages.
+- [ ] Verify existing automatic image optimization/editing.
+- [ ] Add private suggestions and admin student-list toggle.
+- [ ] Add standalone hidden role with enforced identity privacy.
+- [ ] Verify authenticated flows and mobile layouts; clean temporary content.
