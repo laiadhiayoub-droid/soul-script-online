@@ -1,3 +1,4 @@
+import { useI18n, tr } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { RotateCw, Eraser, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ export function ImageEditor({ file, edits, open, onOpenChange, onSave }: {
   file: File | null; edits: ImageEdits; open: boolean;
   onOpenChange: (o: boolean) => void; onSave: (e: ImageEdits) => void;
 }) {
+  useI18n();
   const [draft, setDraft] = useState<ImageEdits>(edits);
   const [preview, setPreview] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -35,30 +37,27 @@ export function ImageEditor({ file, edits, open, onOpenChange, onSave }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="pe-8">تعديل الصورة</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="pe-8">{tr("تعديل الصورة")}</DialogTitle></DialogHeader>
         <div className="rounded-md border bg-muted grid place-items-center min-h-48">
-          {preview ? <img src={preview} alt="معاينة" className="max-h-72 object-contain" /> : <span className="text-sm text-muted-foreground">…</span>}
+          {preview ? <img src={preview} alt={tr("معاينة")} className="max-h-72 object-contain" /> : <span className="text-sm text-muted-foreground">…</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="h-10" onClick={() => setDraft((d) => ({ ...d, rotation: ((d.rotation + 90) % 360) as ImageEdits["rotation"] }))}>
-            <RotateCw className="size-4" /> تدوير
-          </Button>
+            <RotateCw className="size-4" /> {tr("تدوير")}</Button>
           <Button variant={draft.cleanup ? "default" : "outline"} className="h-10" onClick={() => setDraft((d) => ({ ...d, cleanup: !d.cleanup }))}>
-            <Eraser className="size-4" /> تنظيف الخلفية
-          </Button>
+            <Eraser className="size-4" /> {tr("تنظيف الخلفية")}</Button>
           <Button variant="ghost" className="h-10" onClick={() => setDraft(DEFAULT_EDITS)}>
-            <RotateCcw className="size-4" /> إعادة ضبط
-          </Button>
+            <RotateCcw className="size-4" /> {tr("إعادة ضبط")}</Button>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">التباين: {draft.contrast.toFixed(2)}</Label>
+          <Label className="text-xs">{tr("التباين:")}{draft.contrast.toFixed(2)}</Label>
           <Slider min={0.5} max={2} step={0.05} value={[draft.contrast]} onValueChange={([v]) => setDraft((d) => ({ ...d, contrast: v ?? 1 }))} />
         </div>
-        <p className="text-xs font-bold text-muted-foreground">قصّ الحواف</p>
+        <p className="text-xs font-bold text-muted-foreground">{tr("قصّ الحواف")}</p>
         <div className="grid grid-cols-2 gap-3">
-          {crop("top", "أعلى")}{crop("bottom", "أسفل")}{crop("right", "يمين")}{crop("left", "يسار")}
+          {crop("top", tr("أعلى"))}{crop("bottom", tr("أسفل"))}{crop("right", tr("يمين"))}{crop("left", tr("يسار"))}
         </div>
-        <Button className="w-full h-11" onClick={() => { onSave(draft); onOpenChange(false); }}>حفظ التعديلات</Button>
+        <Button className="w-full h-11" onClick={() => { onSave(draft); onOpenChange(false); }}>{tr("حفظ التعديلات")}</Button>
       </DialogContent>
     </Dialog>
   );

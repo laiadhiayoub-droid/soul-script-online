@@ -1,3 +1,4 @@
+import { useI18n, tr } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -12,6 +13,7 @@ import { NotebookDiagram } from "@/components/NotebookDiagram";
 
 type Page = {id:string;title:string;image_path:string;subject:string;description?:string|null;resource_links?:string[]};
 export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:Page[];initialId:string|null;roles:string[];onClose:()=>void}) {
+  useI18n();
   const [index,setIndex] = useState(0);
   const [mode,setMode] = useState("original");
   const [busy,setBusy] = useState(false);
@@ -39,7 +41,7 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
       a.href = url; a.download = `${page.title}.${blob.type === "image/webp" ? "webp" : "jpg"}`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 30000);
-    } catch { toast.error("تعذّر تحميل الصورة"); } finally { setDownloading(false); }
+    } catch { toast.error(tr("تعذّر تحميل الصورة")); } finally { setDownloading(false); }
   }
   useEffect(()=>{setIndex(Math.max(0,pages.findIndex(p=>p.id===initialId)));setMode("original");setFailure(null);setEditing(false);setDraft(null);},[initialId]);
   const page=initialId ? pages[index] : undefined;
@@ -59,7 +61,7 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
     if(!page || busy) return;
     setBusy(true);setFailure(null);
     try { const result=await generate({data:{lessonId:page.id,resume,rebuild}}); if(result.status==="error")setFailure(result.message); await formatted.refetch(); }
-    catch {setFailure("تعذّر تنسيق الصفحة.");} finally {setBusy(false);}
+    catch {setFailure(tr("تعذّر تنسيق الصفحة."));} finally {setBusy(false);}
   }
   function startEdit() {
     if(!parsed.success) return;
@@ -71,10 +73,10 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
     setSaving(true);
     try {
       await update({data:{lessonId:page.id,document:draft}});
-      toast.success("تم حفظ التعديلات");
+      toast.success(tr("تم حفظ التعديلات"));
       setEditing(false);setDraft(null);
       await formatted.refetch();
-    } catch { toast.error("تعذّر حفظ التعديلات"); } finally { setSaving(false); }
+    } catch { toast.error(tr("تعذّر حفظ التعديلات")); } finally { setSaving(false); }
   }
   function setRunText(bi:number, ri:number, text:string) {
     setDraft(d=>{ if(!d) return d; const next=structuredClone(d); const run=next.blocks[bi]?.runs[ri]; if(run) run.text=text; return next; });
@@ -90,33 +92,33 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
   const showSideBySide = mode==="formatted" && allowed && parsed.success && formatted.data?.status==="ready" && image.data && !editing;
   return <Dialog open={!!initialId} onOpenChange={open=>{if(!open)onClose();}}>
     <DialogContent className="w-[96vw] sm:max-w-5xl max-h-[94vh] overflow-hidden p-0 gap-0">
-      <DialogTitle className="sr-only">{page?.title || "الكراس"}</DialogTitle>
+      <DialogTitle className="sr-only">{page?.title || tr("الكراس")}</DialogTitle>
       <div className="flex flex-wrap gap-2 items-center border-b p-4 px-12">
-        <div className="min-w-0 w-full sm:w-auto sm:flex-1"><h2 className="font-bold break-words">{page?.title}</h2><p className="text-xs text-muted-foreground">صفحة {index+1} من {pages.length}</p></div>
-        <Button size="sm" className="h-10" variant={mode==="original"?"default":"outline"} onClick={()=>setMode("original")}><BookOpen className="size-4"/>الأصل</Button>
-        <Button size="sm" className="h-10" variant={mode==="formatted"?"default":"outline"} onClick={()=>setMode("formatted")}>{allowed?<FileText className="size-4"/>:<Lock className="size-4"/>}الكراس المنسّق</Button>
+        <div className="min-w-0 w-full sm:w-auto sm:flex-1"><h2 className="font-bold break-words">{page?.title}</h2><p className="text-xs text-muted-foreground">{tr("صفحة")}{index+1} {tr("من")}{pages.length}</p></div>
+        <Button size="sm" className="h-10" variant={mode==="original"?"default":"outline"} onClick={()=>setMode("original")}><BookOpen className="size-4"/>{tr("الأصل")}</Button>
+        <Button size="sm" className="h-10" variant={mode==="formatted"?"default":"outline"} onClick={()=>setMode("formatted")}>{allowed?<FileText className="size-4"/>:<Lock className="size-4"/>}{tr("الكراس المنسّق")}</Button>
       </div>
       {(page?.description || page?.resource_links?.length) && <div className="border-b px-4 py-3 space-y-2 max-h-36 overflow-auto">
         {page.description && <p className="text-sm whitespace-pre-wrap break-words">{page.description}</p>}
         {page.resource_links?.filter(link=>/^https?:\/\//i.test(link)).map((link,i)=><a key={i} href={link} target="_blank" rel="noopener noreferrer" className="block text-primary underline text-sm break-all" dir="ltr">{link}</a>)}
       </div>}
       {mode === "original" && <div className="flex justify-center gap-2 border-b p-2">
-        <Button variant="ghost" size="icon" className="size-10" aria-label="تكبير" onClick={()=>setScale(s=>Math.min(3,s+0.25))}><ZoomIn className="size-4"/></Button>
-        <Button variant="ghost" size="icon" className="size-10" aria-label="تصغير" onClick={()=>setScale(s=>Math.max(0.5,s-0.25))}><ZoomOut className="size-4"/></Button>
-        {image.data && <Button variant="ghost" size="icon" className="size-10" disabled={downloading} onClick={downloadImage} aria-label="تحميل">{downloading?<Loader2 className="size-4 animate-spin"/>:<Download className="size-4"/>}</Button>}
-        {image.data && <Button variant="ghost" size="icon" className="size-10" asChild><a href={image.data} target="_blank" rel="noreferrer" aria-label="فتح بالحجم الكامل"><ExternalLink className="size-4"/></a></Button>}
+        <Button variant="ghost" size="icon" className="size-10" aria-label={tr("تكبير")} onClick={()=>setScale(s=>Math.min(3,s+0.25))}><ZoomIn className="size-4"/></Button>
+        <Button variant="ghost" size="icon" className="size-10" aria-label={tr("تصغير")} onClick={()=>setScale(s=>Math.max(0.5,s-0.25))}><ZoomOut className="size-4"/></Button>
+        {image.data && <Button variant="ghost" size="icon" className="size-10" disabled={downloading} onClick={downloadImage} aria-label={tr("تحميل")}>{downloading?<Loader2 className="size-4 animate-spin"/>:<Download className="size-4"/>}</Button>}
+        {image.data && <Button variant="ghost" size="icon" className="size-10" asChild><a href={image.data} target="_blank" rel="noreferrer" aria-label={tr("فتح بالحجم الكامل")}><ExternalLink className="size-4"/></a></Button>}
       </div>}
       {editing && <div className="flex justify-center gap-2 border-b p-2">
-        <Button size="sm" onClick={saveEdit} disabled={saving}>{saving?<Loader2 className="size-4 animate-spin"/>:<Check className="size-4"/>}حفظ التعديلات</Button>
-        <Button size="sm" variant="outline" disabled={saving} onClick={()=>{setEditing(false);setDraft(null);}}><X className="size-4"/>إلغاء</Button>
+        <Button size="sm" onClick={saveEdit} disabled={saving}>{saving?<Loader2 className="size-4 animate-spin"/>:<Check className="size-4"/>}{tr("حفظ التعديلات")}</Button>
+        <Button size="sm" variant="outline" disabled={saving} onClick={()=>{setEditing(false);setDraft(null);}}><X className="size-4"/>{tr("إلغاء")}</Button>
       </div>}
       <div className="overflow-y-auto bg-muted p-3 sm:p-6 min-h-64 max-h-[70vh]">
         {mode==="original" ? image.data ? <div className="overflow-auto" style={{touchAction:"pan-x pan-y"}} onTouchMove={onTouchMove} onTouchEnd={()=>{pinch.current=null;}}>
             <img className="mx-auto max-w-full h-auto select-none cursor-zoom-in" onClick={()=>setLightbox(true)} style={{transform:`scale(${scale})`,transformOrigin:"center top"}} src={image.data} alt={page?.title}/>
-          </div> : <p className="text-center py-16">{image.isError?"تعذّر تحميل الصورة.":"جارٍ تحميل الصفحة…"}</p>
+          </div> : <p className="text-center py-16">{image.isError?tr("تعذّر تحميل الصورة."):tr("جارٍ تحميل الصفحة…")}</p>
         : !allowed ? <div className="text-center py-16 space-y-4"><Lock className="size-9 mx-auto text-primary"/><p>{LOCKED_NOTEBOOK_MESSAGE}</p></div>
         : editing && draft ? <article className="digital-sheet mx-auto" dir={draft.direction}>
-            <p className="text-xs text-muted-foreground mb-4">عدّل النص مباشرة ثم احفظ. تُحفظ الألوان والتنسيق كما هي.</p>
+            <p className="text-xs text-muted-foreground mb-4">{tr("عدّل النص مباشرة ثم احفظ. تُحفظ الألوان والتنسيق كما هي.")}</p>
             {draft.blocks.map((block,i)=><div key={i} className={`document-block document-${block.kind}`}>
               {block.kind === "diagram" && <NotebookDiagram diagram={block.diagram}/>}
               {block.runs.map((run,j)=><span key={j} contentEditable suppressContentEditableWarning
@@ -126,16 +128,16 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
             </div>)}
           </article>
         : parsed.success && formatted.data?.status==="ready" ? <>
-          {parsed.data.uncertain && <p className="text-sm text-destructive mb-3">توجد أجزاء غير واضحة؛ راجع الصورة الأصلية.</p>}
+          {parsed.data.uncertain && <p className="text-sm text-destructive mb-3">{tr("توجد أجزاء غير واضحة؛ راجع الصورة الأصلية.")}</p>}
           {failure && <p role="alert" className="text-sm text-destructive mb-3">{failure}</p>}
           {canEdit && <div className="flex flex-wrap justify-end gap-2 mb-3">
-            {roles.includes("admin") && <Button size="sm" variant="outline" disabled={busy} onClick={()=>prepare(false,true)}>{busy?<Loader2 className="size-4 animate-spin"/>:<RefreshCw className="size-4"/>}إعادة تنسيق الرسومات</Button>}
-            <Button size="sm" variant="outline" disabled={busy} onClick={startEdit}><Pencil className="size-4"/>تعديل النص</Button>
+            {roles.includes("admin") && <Button size="sm" variant="outline" disabled={busy} onClick={()=>prepare(false,true)}>{busy?<Loader2 className="size-4 animate-spin"/>:<RefreshCw className="size-4"/>}{tr("إعادة تنسيق الرسومات")}</Button>}
+            <Button size="sm" variant="outline" disabled={busy} onClick={startEdit}><Pencil className="size-4"/>{tr("تعديل النص")}</Button>
           </div>}
           <div className={showSideBySide ? "grid gap-4 lg:grid-cols-2 items-start" : ""}>
             {showSideBySide && <figure className="hidden lg:block sticky top-0">
-              <img className="w-full h-auto rounded-md border" src={image.data ?? undefined} alt="الصفحة الأصلية"/>
-              <figcaption className="text-xs text-muted-foreground text-center mt-1">الصورة الأصلية</figcaption>
+              <img className="w-full h-auto rounded-md border" src={image.data ?? undefined} alt={tr("الصفحة الأصلية")}/>
+              <figcaption className="text-xs text-muted-foreground text-center mt-1">{tr("الصورة الأصلية")}</figcaption>
             </figure>}
             <article className="digital-sheet mx-auto" dir={parsed.data.direction}>
               {parsed.data.blocks.map((block,i)=><div key={i} className={`document-block document-${block.kind}`}>
@@ -147,19 +149,19 @@ export function BoundNotebookReader({pages, initialId, roles, onClose}: {pages:P
           </div>
         </> : <div className="text-center py-16 space-y-4">
           <FileText className="size-9 mx-auto text-primary"/>
-          <p>{failure || formatted.data?.error_message || (formatted.isError?"تعذّر فتح الكراس المنسّق.":"الصفحة المنسّقة ليست جاهزة بعد.")}</p>
-          <Button onClick={()=>prepare()} disabled={busy || formatted.isLoading}>{busy?<Loader2 className="size-4 animate-spin"/>:<RefreshCw className="size-4"/>}{busy?"جارٍ التنسيق…":"تنسيق الصفحة"}</Button>
-          {roles.includes("admin") && (failure || formatted.data?.status === "error") && <Button variant="outline" disabled={busy} onClick={()=>prepare(true)}>إعادة تفعيل التحويل</Button>}
+          <p>{failure || formatted.data?.error_message || (formatted.isError?tr("تعذّر فتح الكراس المنسّق."):tr("الصفحة المنسّقة ليست جاهزة بعد."))}</p>
+          <Button onClick={()=>prepare()} disabled={busy || formatted.isLoading}>{busy?<Loader2 className="size-4 animate-spin"/>:<RefreshCw className="size-4"/>}{busy?tr("جارٍ التنسيق…"):tr("تنسيق الصفحة")}</Button>
+          {roles.includes("admin") && (failure || formatted.data?.status === "error") && <Button variant="outline" disabled={busy} onClick={()=>prepare(true)}>{tr("إعادة تفعيل التحويل")}</Button>}
         </div>}
       </div>
       <div className="flex items-center justify-between border-t p-3">
-        <Button variant="outline" size="sm" className="h-10" disabled={index===0 || busy} onClick={()=>{setIndex(i=>i-1);setFailure(null);}}><ArrowRight className="size-4"/>السابقة</Button>
+        <Button variant="outline" size="sm" className="h-10" disabled={index===0 || busy} onClick={()=>{setIndex(i=>i-1);setFailure(null);}}><ArrowRight className="size-4"/>{tr("السابقة")}</Button>
         <span className="text-sm text-muted-foreground">{index+1} / {pages.length}</span>
-        <Button variant="outline" size="sm" className="h-10" disabled={index>=pages.length-1 || busy} onClick={()=>{setIndex(i=>i+1);setFailure(null);}}>التالية<ArrowLeft className="size-4"/></Button>
+        <Button variant="outline" size="sm" className="h-10" disabled={index>=pages.length-1 || busy} onClick={()=>{setIndex(i=>i+1);setFailure(null);}}>{tr("التالية")}<ArrowLeft className="size-4"/></Button>
       </div>
       {lightbox && image.data && <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out" onClick={()=>setLightbox(false)}>
         <img src={image.data} alt={page?.title} className="max-w-full max-h-full object-contain rounded-md"/>
-        <Button variant="ghost" size="icon" className="size-10 absolute top-4 end-4 text-white hover:bg-white/20" aria-label="إغلاق" onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
+        <Button variant="ghost" size="icon" className="size-10 absolute top-4 end-4 text-white hover:bg-white/20" aria-label={tr("إغلاق")} onClick={()=>setLightbox(false)}><X className="size-5"/></Button>
       </div>}
     </DialogContent>
   </Dialog>;
