@@ -1,0 +1,1 @@
+export const translations: Record<string, readonly [string, string, string]> = {};

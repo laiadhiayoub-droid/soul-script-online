@@ -13,3 +13,7 @@
 - Generate one source page per authenticated server request and render validated structured blocks, not arbitrary HTML, to keep source formatting safe and retries page-scoped.
 - Reconstruct notebook diagrams as validated whitelisted SVG primitives rendered by React, never injected markup; retain legacy text blocks and preserve the last ready document if an explicit admin regeneration fails.
 - Bind uploaded batches using the existing root lesson/continuation relationship and deterministic page ordering to preserve existing notebooks.
+- Keep summary resources on lesson metadata; render only validated HTTP(S) links and use grouped-page flags with the existing continuation relationship for unified entries.
+- Enforce hidden identity visibility through restrictive profile SELECT policies; public author labels use only the safe visible-author projection, while hidden users retain ordinary student access.
+- Store suggestions with authenticated ownership and admin-only reads; never expose submitter lists through student views.
+- Translate interface literals through the shared four-language catalog, preserving student-authored text, links, and formatted source documents.
