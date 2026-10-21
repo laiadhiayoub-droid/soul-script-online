@@ -1,13 +1,15 @@
+import { useI18n, tr } from "@/lib/i18n";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export const BAN_MESSAGE = "تم حظر هذا الحساب من قبل الإدارة. لا يمكنك دخول المنصة.";
+export const BAN_MESSAGE = tr("تم حظر هذا الحساب من قبل الإدارة. لا يمكنك دخول المنصة.");
 
 /** Signs out banned accounts immediately (database policies also block all their data access). */
 export function BanGuard() {
+  useI18n();
   useEffect(() => {
     async function check() {
       const { data: s } = await supabase.auth.getSession();
@@ -29,6 +31,7 @@ export function BanGuard() {
 
 /** Top banner; only rendered when an admin switched it on. */
 export function AnnouncementBanner() {
+  useI18n();
   const q = useQuery({
     queryKey: ["announcement"],
     queryFn: async () => {

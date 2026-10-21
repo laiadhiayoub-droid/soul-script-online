@@ -29,7 +29,7 @@ import { generateFormattedPage } from "@/lib/notebook.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { ThemeToggle, LanguageMenu } from "@/components/HeaderControls";
 import { ImageEditor } from "@/components/ImageEditor";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, tr } from "@/lib/i18n";
 import { SuggestionButton } from "@/components/Suggestions";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -39,10 +39,10 @@ import { DEFAULT_EDITS, processImage, extractUnitDomain, type ImageEdits } from 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "المكتبة الرقمية المدرسية — 2 ثانوي لغات أجنبية" },
-      { name: "description", content: "تصفّح كراريس زملائك في الإسبانية وباقي المواد، وابحث عن الدروس التي غبت عنها." },
-      { property: "og:title", content: "المكتبة الرقمية المدرسية" },
-      { property: "og:description", content: "كراريس دروس وملخصات تلاميذ 2AS لغات أجنبية — شعبة الإسبانية." },
+      { title: tr("المكتبة الرقمية المدرسية — 2 ثانوي لغات أجنبية") },
+      { name: "description", content: tr("تصفّح كراريس زملائك في الإسبانية وباقي المواد، وابحث عن الدروس التي غبت عنها.") },
+      { property: "og:title", content: tr("المكتبة الرقمية المدرسية") },
+      { property: "og:description", content: tr("كراريس دروس وملخصات تلاميذ 2AS لغات أجنبية — شعبة الإسبانية.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -75,6 +75,7 @@ function useUser() {
 }
 
 function Index() {
+  useI18n();
   const { user, ready } = useUser();
   const qc = useQueryClient();
 
@@ -147,10 +148,10 @@ function Index() {
     if (!user) return;
     if (bookmarked.has(lessonId)) {
       const { error } = await supabase.from("bookmarks").delete().eq("user_id", user.id).eq("lesson_id", lessonId);
-      if (error) { toast.error("تعذّر تحديث المفضلة"); return; }
+      if (error) { toast.error(tr("تعذّر تحديث المفضلة")); return; }
     } else {
       const { error } = await supabase.from("bookmarks").insert({ user_id: user.id, lesson_id: lessonId });
-      if (error) { toast.error("تعذّر تحديث المفضلة"); return; }
+      if (error) { toast.error(tr("تعذّر تحديث المفضلة")); return; }
     }
     qc.invalidateQueries({ queryKey: ["bookmarks", user.id] });
   }
@@ -161,16 +162,16 @@ function Index() {
     const ids = [l.id, ...(lessons.data ?? []).filter((x) => x.parent_lesson_id === l.id).map((x) => x.id)];
     const paths = (lessons.data ?? []).filter((x) => ids.includes(x.id)).map((x) => x.image_path);
     const { error } = await supabase.from("lessons").delete().in("id", ids);
-    if (error) { toast.error("تعذّر الحذف"); return; }
+    if (error) { toast.error(tr("تعذّر الحذف")); return; }
     if (paths.length) await supabase.storage.from("lessons-images").remove(paths);
-    toast.success("تم الحذف");
+    toast.success(tr("تم الحذف"));
     setDeleting(null);
     qc.invalidateQueries({ queryKey: ["lessons"] });
   }
 
   function shareLesson(l: Lesson) {
     const url = `${window.location.origin}/?lesson=${l.id}`;
-    void navigator.clipboard.writeText(url).then(() => toast.success("تم نسخ الرابط"), () => toast.error("تعذّر نسخ الرابط"));
+    void navigator.clipboard.writeText(url).then(() => toast.success(tr("تم نسخ الرابط")), () => toast.error(tr("تعذّر نسخ الرابط")));
   }
 
   // Open a shared lesson link (?lesson=<id>)
@@ -183,7 +184,7 @@ function Index() {
     setZoom(target);
   }, [lessons.data, zoom]);
 
-  const nameOf = (id: string) => visibleAuthors.data?.has(id) ? profiles.data?.find((p) => p.id === id)?.full_name || "تلميذ" : "تلميذ";
+  const nameOf = (id: string) => visibleAuthors.data?.has(id) ? profiles.data?.find((p) => p.id === id)?.full_name || tr("تلميذ") : tr("تلميذ");
 
   // Tier 1: book covers — one card per (student, subject) notebook
   const books = useMemo(() => {
@@ -259,14 +260,14 @@ function Index() {
     const results = await Promise.all(
       updates.map((u) => supabase.from("lessons").update({ order_index: u.order_index }).eq("id", u.id)),
     );
-    if (results.some((r) => r.error)) toast.error("تعذّر حفظ الترتيب");
-    else toast.success("تم حفظ الترتيب");
+    if (results.some((r) => r.error)) toast.error(tr("تعذّر حفظ الترتيب"));
+    else toast.success(tr("تم حفظ الترتيب"));
     qc.invalidateQueries({ queryKey: ["lessons"] });
   }
 
   async function signIn() {
     const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) toast.error("فشل تسجيل الدخول");
+    if (r.error) toast.error(tr("فشل تسجيل الدخول"));
   }
   async function signOut() {
     await qc.cancelQueries();
@@ -276,7 +277,7 @@ function Index() {
     setBookQ("");
     setOpenBook(null);
     setView("books");
-    toast("تم تسجيل الخروج");
+    toast(tr("تم تسجيل الخروج"));
   }
 
   return (
@@ -289,7 +290,7 @@ function Index() {
             </span>
             <span className="flex-1 min-w-0">
               <span className="block font-display font-extrabold text-base sm:text-lg leading-tight truncate">{t("appTitle")}</span>
-              <span className="block text-xs text-muted-foreground truncate">2 ثانوي · لغات أجنبية · Español</span>
+              <span className="block text-xs text-muted-foreground truncate">{tr("2 ثانوي · لغات أجنبية · Español")}</span>
             </span>
           </button>
           {user && <SuggestionButton userId={user.id} />}
@@ -307,7 +308,7 @@ function Index() {
                 <Button size="sm" onClick={() => setUploadOpen(true)} disabled={needsName}>
                   <Plus className="size-4" /> {canPublish ? t("addLesson") : t("addSummary")}
                 </Button>
-                <Button size="icon" variant="ghost" onClick={signOut} aria-label="تسجيل الخروج">
+                <Button size="icon" variant="ghost" onClick={signOut} aria-label={tr("تسجيل الخروج")}>
                   <LogOut className="size-4" />
                 </Button>
               </div>
@@ -318,13 +319,13 @@ function Index() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 flex flex-col gap-3 pt-12">
-                  <SheetTitle className="text-start">{myProfile?.full_name || "القائمة"}</SheetTitle>
+                  <SheetTitle className="text-start">{myProfile?.full_name || tr("القائمة")}</SheetTitle>
                   <Button className="h-12 justify-start" onClick={() => { setMenuOpen(false); setUploadOpen(true); }} disabled={needsName}>
                     <Plus className="size-4" /> {canPublish ? t("addLesson") : t("addSummary")}
                   </Button>
                   {isAdmin && (
                     <Button className="h-12 justify-start" variant="outline" asChild>
-                      <Link to="/admin" onClick={() => setMenuOpen(false)}><ShieldCheck className="size-4" /> لوحة التحكم</Link>
+                      <Link to="/admin" onClick={() => setMenuOpen(false)}><ShieldCheck className="size-4" /> {tr("لوحة التحكم")}</Link>
                     </Button>
                   )}
                   <Button className="h-12 justify-start" variant="ghost" onClick={() => { setMenuOpen(false); signOut(); }}>
@@ -348,9 +349,9 @@ function Index() {
         <main className="mx-auto max-w-xl px-4 py-16">
           <div className="notebook-paper margin-line rounded-xl p-10 text-center space-y-4">
             <BookOpen className="mx-auto size-10 text-primary" />
-            <h2 className="text-2xl font-extrabold">مكتبة كراريس القسم</h2>
-            <p className="text-muted-foreground">سجّل الدخول لتصفّح دروس وملخصات زملائك.</p>
-            <Button onClick={signIn}>تسجيل الدخول باستخدام Google</Button>
+            <h2 className="text-2xl font-extrabold">{tr("مكتبة كراريس القسم")}</h2>
+            <p className="text-muted-foreground">{tr("سجّل الدخول لتصفّح دروس وملخصات زملائك.")}</p>
+            <Button onClick={signIn}>{tr("تسجيل الدخول باستخدام Google")}</Button>
           </div>
         </main>
       ) : (
@@ -360,40 +361,37 @@ function Index() {
           <section className="space-y-5">
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={() => setOpenBook(null)}>
-                <ArrowRight className="size-4" /> كل الكراريس
-              </Button>
+                <ArrowRight className="size-4" /> {tr("كل الكراريس")}</Button>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-extrabold leading-tight">
-                  كراس {subjectLabel(openBook.subject).replace("اللغة ", "")}
+                  {tr("كراس")}{subjectLabel(openBook.subject).replace(tr("اللغة "), "")}
                   <span className="text-primary"> — {nameOf(openBook.userId)}</span>
                 </h2>
-                <p className="text-sm text-muted-foreground">{bookLessons.length} صفحة</p>
+                <p className="text-sm text-muted-foreground">{bookLessons.length} {tr("صفحة")}</p>
               </div>
               {bookLessons[0] && (
                 <Button variant="outline" size="sm" onClick={() => { const first = bookLessons[0]; if (first) shareLesson(first); }}>
-                  <Share2 className="size-4" /> نسخ الرابط
-                </Button>
+                  <Share2 className="size-4" /> {tr("نسخ الرابط")}</Button>
               )}
             </div>
 
             <div className="relative max-w-md">
               <Search className="size-4 absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
               <Input className="ps-9 bg-card" value={bookQ} onChange={(e) => setBookQ(e.target.value)}
-                placeholder="ابحث داخل هذا الكراس (عنوان، ميدان، وحدة...)" />
+                placeholder={tr("ابحث داخل هذا الكراس (عنوان، ميدان، وحدة...)")} />
             </div>
 
             {bookLessons.length === 0 ? (
               <div className="notebook-paper margin-line rounded-xl p-12 text-center text-muted-foreground">
                 <NotebookPen className="mx-auto mb-3 size-8" />
-                لا توجد دروس في هذا الكراس بعد.
-              </div>
+                {tr("لا توجد دروس في هذا الكراس بعد.")}</div>
             ) : (
               <div className="space-y-6">
                 {groupedBookLessons.map((sg) => (
                   <section key={sg.semester} className="space-y-3">
                     <h3 className="flex items-center gap-2 text-base font-extrabold text-primary">
                       <span className="h-px flex-1 bg-border" />
-                      {sg.semester === "none" ? "بدون فصل" : semesterLabel(sg.semester)}
+                      {sg.semester === "none" ? tr("بدون فصل") : semesterLabel(sg.semester)}
                       <span className="h-px flex-1 bg-border" />
                     </h3>
                     {sg.units.map((ug) => (
@@ -434,7 +432,7 @@ function Index() {
                   {view === "books" ? t("books") : view === "summaries" ? t("summaries") : t("favorites")}
                 </h2>
                 <span className="text-sm text-muted-foreground">
-                  {view === "books" ? `${books.length} كراس` : view === "summaries" ? `${summaries.length} ملخص` : `${favoriteLessons.length} عنصر`}
+                  {view === "books" ? tr(`${books.length} كراس`) : view === "summaries" ? tr(`${summaries.length} ملخص`) : tr(`${favoriteLessons.length} عنصر`)}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -460,18 +458,17 @@ function Index() {
             {view === "summaries" ? (
               <section className="space-y-4">
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                  {[{ id: "all", label: "كل المواد" }, ...SUBJECTS].map((s) => (
+                  {[{ id: "all", label: tr("كل المواد") }, ...SUBJECTS].map((s) => (
                     <button key={s.id} onClick={() => setSummarySubject(s.id)}
                       className={`shrink-0 rounded-full border px-4 py-1.5 text-sm transition ${summarySubject === s.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground hover:bg-secondary"}`}>
-                      {s.label}
+                      {tr(s.label)}
                     </button>
                   ))}
                 </div>
                 {summaries.length === 0 ? (
                   <div className="notebook-paper margin-line rounded-xl p-12 text-center text-muted-foreground">
                     <GraduationCap className="mx-auto mb-3 size-8" />
-                    لا توجد ملخصات هنا بعد.
-                  </div>
+                    {tr("لا توجد ملخصات هنا بعد.")}</div>
                 ) : (
                   <ol className="space-y-2">
                     {summaries.map((l) => (
@@ -491,8 +488,7 @@ function Index() {
               favoriteLessons.length === 0 ? (
                 <div className="notebook-paper margin-line rounded-xl p-12 text-center text-muted-foreground">
                   <Star className="mx-auto mb-3 size-8" />
-                  لم تضف شيئاً إلى المفضلة بعد. اضغط نجمة أي درس أو ملخص لحفظه هنا.
-                </div>
+                  {tr("لم تضف شيئاً إلى المفضلة بعد. اضغط نجمة أي درس أو ملخص لحفظه هنا.")}</div>
               ) : (
                 <ol className="space-y-2">
                   {favoriteLessons.map((l) => (
@@ -512,8 +508,7 @@ function Index() {
             ) : books.length === 0 ? (
               <div className="notebook-paper margin-line rounded-xl p-12 text-center text-muted-foreground">
                 <NotebookPen className="mx-auto mb-3 size-8" />
-                لا توجد كراريس مطابقة بعد.
-              </div>
+                {tr("لا توجد كراريس مطابقة بعد.")}</div>
             ) : (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {books.map((b) => (
@@ -531,11 +526,11 @@ function Index() {
       <FilterDialog open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} units={unitOptions} />
       <Dialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle className="pe-8">تأكيد الحذف</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">هل أنت متأكد من الحذف؟ سيُحذف «{deleting?.title}» وكل صفحاته التابعة نهائياً.</p>
+          <DialogHeader><DialogTitle className="pe-8">{tr("تأكيد الحذف")}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{tr("هل أنت متأكد من الحذف؟ سيُحذف «")}{deleting?.title}{tr("» وكل صفحاته التابعة نهائياً.")}</p>
           <div className="flex flex-col-reverse sm:flex-row gap-2">
-            <Button variant="destructive" className="h-11 sm:flex-1" onClick={deleteLesson}>نعم، احذف</Button>
-            <Button variant="outline" className="h-11 sm:flex-1" onClick={() => setDeleting(null)}>إلغاء</Button>
+            <Button variant="destructive" className="h-11 sm:flex-1" onClick={deleteLesson}>{tr("نعم، احذف")}</Button>
+            <Button variant="outline" className="h-11 sm:flex-1" onClick={() => setDeleting(null)}>{tr("إلغاء")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -553,6 +548,7 @@ function Index() {
 
 /* ---------- Tier 1: 3D book cover (no author name) ---------- */
 function BookCover({ book, onOpen }: { book: Book; onOpen: () => void }) {
+  useI18n();
   const sub = SUBJECTS.find((s) => s.id === book.subject);
   return (
     <button onClick={onOpen}
@@ -560,16 +556,16 @@ function BookCover({ book, onOpen }: { book: Book; onOpen: () => void }) {
       <div className="absolute inset-y-0 start-0 w-2.5 bg-gradient-to-b from-primary via-primary/90 to-primary/70" />
       <div className="absolute inset-y-0 start-2.5 w-px bg-foreground/10" />
       {book.hasNew && (
-        <span className="absolute top-3 end-3 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-accent-foreground shadow-sm animate-pulse">جديد</span>
+        <span className="absolute top-3 end-3 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-accent-foreground shadow-sm animate-pulse">{tr("جديد")}</span>
       )}
       <div className="p-5 ps-8 space-y-4 min-h-44 flex flex-col">
         <BookMarked className="size-10 sm:size-8 text-primary transition-transform duration-300 group-hover:scale-110" />
         <div className="flex-1 space-y-1.5">
-          <Badge variant="secondary" className="text-[10px]">{sub?.sub || "مادة"}</Badge>
-          <h3 className="font-extrabold text-base leading-snug">{sub?.label ?? book.subject}</h3>
+          <Badge variant="secondary" className="text-[10px]">{sub?.sub || tr("مادة")}</Badge>
+          <h3 className="font-extrabold text-base leading-snug">{tr(sub?.label ?? book.subject)}</h3>
         </div>
         <span className="self-start inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-bold">
-          <FileText className="size-3.5" /> {book.count} {book.count > 2 ? "دروس" : "درس"}
+          <FileText className="size-3.5" /> {book.count} {book.count > 2 ? tr("دروس") : tr("درس")}
         </span>
       </div>
     </button>
@@ -581,57 +577,58 @@ function FilterDialog({ open, onOpenChange, filters, onApply, units }: {
   open: boolean; onOpenChange: (o: boolean) => void; filters: Filters; onApply: (f: Filters) => void;
   units: string[];
 }) {
+  useI18n();
   const [draft, setDraft] = useState<Filters>(filters);
   useEffect(() => { if (open) setDraft(filters); }, [open, filters]);
   const set = (k: keyof Filters) => (v: string) => setDraft((d) => ({ ...d, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle className="flex items-center gap-2 pe-8"><SlidersHorizontal className="size-5 shrink-0" /> تصفية الكراريس</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="flex items-center gap-2 pe-8"><SlidersHorizontal className="size-5 shrink-0" /> {tr("تصفية الكراريس")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>المادة</Label>
+            <Label>{tr("المادة")}</Label>
             <Select value={draft.subject} onValueChange={set("subject")}>
               <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل المواد</SelectItem>
-                {SUBJECTS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                <SelectItem value="all">{tr("كل المواد")}</SelectItem>
+                {SUBJECTS.map((s) => <SelectItem key={s.id} value={s.id}>{tr(s.label)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>نوع المحتوى</Label>
+            <Label>{tr("نوع المحتوى")}</Label>
             <Select value={draft.type} onValueChange={set("type")}>
               <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">الكل</SelectItem>
-                {CONTENT_TYPES.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                <SelectItem value="all">{tr("الكل")}</SelectItem>
+                {CONTENT_TYPES.map((c) => <SelectItem key={c.id} value={c.id}>{tr(c.label)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>الفصل الدراسي</Label>
+            <Label>{tr("الفصل الدراسي")}</Label>
             <Select value={draft.semester} onValueChange={set("semester")}>
               <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل الفصول</SelectItem>
-                {SEMESTERS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                <SelectItem value="all">{tr("كل الفصول")}</SelectItem>
+                {SEMESTERS.map((s) => <SelectItem key={s.id} value={s.id}>{tr(s.label)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>المحور / الوحدة</Label>
+            <Label>{tr("المحور / الوحدة")}</Label>
             <Select value={draft.unit} onValueChange={set("unit")}>
               <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل الوحدات</SelectItem>
+                <SelectItem value="all">{tr("كل الوحدات")}</SelectItem>
                 {units.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex gap-2 pt-1">
-            <Button className="flex-1" onClick={() => { onApply(draft); onOpenChange(false); }}>تطبيق التصفية</Button>
-            <Button variant="outline" onClick={() => { setDraft(EMPTY_FILTERS); onApply(EMPTY_FILTERS); onOpenChange(false); }}>إعادة التعيين</Button>
+            <Button className="flex-1" onClick={() => { onApply(draft); onOpenChange(false); }}>{tr("تطبيق التصفية")}</Button>
+            <Button variant="outline" onClick={() => { setDraft(EMPTY_FILTERS); onApply(EMPTY_FILTERS); onOpenChange(false); }}>{tr("إعادة التعيين")}</Button>
           </div>
         </div>
       </DialogContent>
@@ -647,6 +644,7 @@ function LessonRow({ lesson: l, parent, author, starred, onStar, onShare, onDele
   onOpen: () => void;
   controls?: { up: (() => void) | undefined; down: (() => void) | undefined } | undefined;
 }) {
+  useI18n();
   return (
     <li className="flex items-center gap-2">
       <button onClick={onOpen}
@@ -664,28 +662,28 @@ function LessonRow({ lesson: l, parent, author, starred, onStar, onShare, onDele
             {l.unit && <span>{l.unit}</span>}
             {l.semester && <span>· {semesterLabel(l.semester)}</span>}
             {l.domain && <span>· {l.domain}</span>}
-            {parent && <span className="text-primary inline-flex items-center gap-0.5"><Link2 className="size-3" /> تتمة: {parent.title}</span>}
+            {parent && <span className="text-primary inline-flex items-center gap-0.5"><Link2 className="size-3" /> {tr("تتمة:")}{parent.title}</span>}
           </span>
         </span>
         <span className="shrink-0 text-end text-xs text-muted-foreground space-y-0.5">
-          <Badge variant="outline" className="block">صفحة {l.page_number}</Badge>
+          <Badge variant="outline" className="block">{tr("صفحة")}{l.page_number}</Badge>
           <span className="block">{new Date(l.created_at).toLocaleDateString("ar-DZ")}</span>
         </span>
       </button>
       <span className="flex flex-col gap-1.5 shrink-0">
         {onStar && (
           <Button size="icon" variant="ghost" className="size-10 sm:size-8" onClick={onStar}
-            aria-label={starred ? "إزالة من المفضلة" : "إضافة للمفضلة"}>
+            aria-label={starred ? tr("إزالة من المفضلة") : tr("إضافة للمفضلة")}>
             <Star className={`size-4 ${starred ? "fill-accent stroke-accent" : ""}`} />
           </Button>
         )}
         {onShare && (
-          <Button size="icon" variant="ghost" className="size-10 sm:size-8" onClick={onShare} aria-label="نسخ الرابط">
+          <Button size="icon" variant="ghost" className="size-10 sm:size-8" onClick={onShare} aria-label={tr("نسخ الرابط")}>
             <Share2 className="size-3.5" />
           </Button>
         )}
         {onDelete && (
-          <Button size="icon" variant="ghost" className="size-10 sm:size-8 text-destructive hover:bg-destructive/10" onClick={onDelete} aria-label="حذف">
+          <Button size="icon" variant="ghost" className="size-10 sm:size-8 text-destructive hover:bg-destructive/10" onClick={onDelete} aria-label={tr("حذف")}>
             <Trash2 className="size-3.5" />
           </Button>
         )}
@@ -693,9 +691,9 @@ function LessonRow({ lesson: l, parent, author, starred, onStar, onShare, onDele
       {controls && (
         <span className="flex flex-col gap-1.5 shrink-0">
           <Button size="icon" variant="outline" className="size-10 sm:size-8" disabled={!controls.up}
-            onClick={controls.up} aria-label="للأعلى"><ArrowUp className="size-3.5" /></Button>
+            onClick={controls.up} aria-label={tr("للأعلى")}><ArrowUp className="size-3.5" /></Button>
           <Button size="icon" variant="outline" className="size-10 sm:size-8" disabled={!controls.down}
-            onClick={controls.down} aria-label="للأسفل"><ArrowDown className="size-3.5" /></Button>
+            onClick={controls.down} aria-label={tr("للأسفل")}><ArrowDown className="size-3.5" /></Button>
         </span>
       )}
     </li>
@@ -703,18 +701,19 @@ function LessonRow({ lesson: l, parent, author, starred, onStar, onShare, onDele
 }
 
 function NameDialog({ userId, onDone }: { userId: string; onDone: () => void }) {
+  useI18n();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   async function save(e?: React.FormEvent) {
     e?.preventDefault();
     if (busy) return;
-    if (name.trim().length < 3) { toast.error("أدخل اسمك الكامل"); return; }
+    if (name.trim().length < 3) { toast.error(tr("أدخل اسمك الكامل")); return; }
     setBusy(true);
     const { error } = await supabase.from("profiles").upsert({ id: userId, full_name: name.trim() });
     setBusy(false);
-    if (error) { toast.error("تعذّر الحفظ، حاول مجدداً"); return; }
-    toast.success("مرحباً بك في المكتبة!");
+    if (error) { toast.error(tr("تعذّر الحفظ، حاول مجدداً")); return; }
+    toast.success(tr("مرحباً بك في المكتبة!"));
     setDone(true);
     onDone();
   }
@@ -725,13 +724,12 @@ function NameDialog({ userId, onDone }: { userId: string; onDone: () => void }) 
         onEscapeKeyDown={(e) => e.preventDefault()}
         className="[&>button.absolute]:hidden"
       >
-        <DialogHeader><DialogTitle className="pe-8">مرحباً! ما اسمك؟</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="pe-8">{tr("مرحباً! ما اسمك؟")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-3">
-          <Label htmlFor="fn">اسم التلميذ الكامل</Label>
-          <Input id="fn" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: أيوب بن علي" />
+          <Label htmlFor="fn">{tr("اسم التلميذ الكامل")}</Label>
+          <Input id="fn" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("مثلاً: أيوب بن علي")} />
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy && <Loader2 className="animate-spin size-4" />} تأكيد والحفظ
-          </Button>
+            {busy && <Loader2 className="animate-spin size-4" />} {tr("تأكيد والحفظ")}</Button>
         </form>
       </DialogContent>
     </Dialog>
@@ -742,6 +740,7 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
   open: boolean; onOpenChange: (o: boolean) => void; userId: string; canPublishLessons: boolean;
   defaultSubject: string; myLessons: Lesson[]; onDone: () => void;
 }) {
+  useI18n();
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState(defaultSubject);
   const [type, setType] = useState<string>(canPublishLessons ? "lesson" : "summary");
@@ -792,18 +791,18 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
       const found = extractUnitDomain(data.text);
       if (found.unit) setUnit((u) => u.trim() ? u : found.unit);
       if (found.domain) setDomain((d) => d.trim() ? d : found.domain);
-      if (found.unit || found.domain) toast.success("تم استخراج الوحدة/الميدان من الصورة — راجعها قبل الحفظ");
+      if (found.unit || found.domain) toast.success(tr("تم استخراج الوحدة/الميدان من الصورة — راجعها قبل الحفظ"));
     } catch { /* OCR is optional */ }
     finally { setOcrBusy(false); }
   }
 
   async function submit() {
     if (busy) return;
-    if (!title.trim()) { toast.error(canPublishLessons ? "عنوان الدرس مطلوب" : "عنوان الملخص مطلوب"); return; }
-    if (!files.length) { toast.error("أضف صور الصفحات"); return; }
-    if (isCont && !parentId) { toast.error("اختر الدرس السابق"); return; }
+    if (!title.trim()) { toast.error(canPublishLessons ? tr("عنوان الدرس مطلوب") : tr("عنوان الملخص مطلوب")); return; }
+    if (!files.length) { toast.error(tr("أضف صور الصفحات")); return; }
+    if (isCont && !parentId) { toast.error(tr("اختر الدرس السابق")); return; }
     let resourceLinks: string[];
-    try { resourceLinks = parseResourceLinks(links); } catch { toast.error("أدخل روابط صحيحة تبدأ بـ https:// أو http://"); return; }
+    try { resourceLinks = parseResourceLinks(links); } catch { toast.error(tr("أدخل روابط صحيحة تبدأ بـ https:// أو http://")); return; }
     setBusy(true);
     const uploadedPaths: string[] = [];
     let published = false;
@@ -814,7 +813,7 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
       const order = notebook.reduce((m, l) => Math.max(m, l.order_index), -1) + 1;
       const rows = [];
       for (const [i, file] of files.entries()) {
-        setProgress(`رفع الصفحة ${i+1} من ${files.length}`);
+        setProgress(tr(`رفع الصفحة ${i+1} من ${files.length}`));
         const blob = await withTimeout(processImage(file, edits[i] ?? DEFAULT_EDITS), 30000, "compress");
         const ext = blob.type === "image/webp" ? "webp" : "jpg";
         const path = `${userId}/${crypto.randomUUID()}.${ext}`;
@@ -832,7 +831,7 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
       if(error) throw error;
       published = true;
       onDone();
-      toast.success(type === "summary" ? "تم حفظ الملخص" : "تم حفظ الصفحات");
+      toast.success(type === "summary" ? tr("تم حفظ الملخص") : tr("تم حفظ الصفحات"));
       // Success: reset the form, close the dialog, and let formatting continue in the background.
       resetForm();
       onOpenChange(false);
@@ -845,56 +844,56 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
     } catch (cause) {
       if(!published && uploadedPaths.length) await supabase.storage.from("lessons-images").remove(uploadedPaths);
       const message = cause instanceof Error ? cause.message : "";
-      if (message.startsWith("timeout:")) toast.error("انتهت مهلة رفع الصور؛ تحقق من الاتصال وحاول مجدداً.");
-      else if (message) toast.error(`تعذّر رفع الصور: ${message}`);
-      else toast.error("حدث خطأ أثناء الرفع؛ لم تُنشر الصفحات.");
+      if (message.startsWith("timeout:")) toast.error(tr("انتهت مهلة رفع الصور؛ تحقق من الاتصال وحاول مجدداً."));
+      else if (message) toast.error(tr(`تعذّر رفع الصور: ${message}`));
+      else toast.error(tr("حدث خطأ أثناء الرفع؛ لم تُنشر الصفحات."));
     } finally {setBusy(false);setProgress("");}
   }
 
   return (
     <Dialog open={open} onOpenChange={o => {if(!busy)onOpenChange(o);}}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="pe-8">{canPublishLessons ? "إضافة درس أو ملخص" : "إضافة ملخص"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="pe-8">{canPublishLessons ? tr("إضافة درس أو ملخص") : tr("إضافة ملخص")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1.5"><Label htmlFor="upload-title">{canPublishLessons ? "عنوان الدرس *" : "عنوان الملخص"}</Label>
+          <div className="space-y-1.5"><Label htmlFor="upload-title">{canPublishLessons ? tr("عنوان الدرس *") : tr("عنوان الملخص")}</Label>
             <Input id="upload-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="El pretérito indefinido" /></div>
           {canPublishLessons && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>المادة</Label>
+            <div className="space-y-1.5"><Label>{tr("المادة")}</Label>
               <Select value={subject} onValueChange={(v) => { setSubject(v); setParentId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SUBJECTS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{SUBJECTS.map((s) => <SelectItem key={s.id} value={s.id}>{tr(s.label)}</SelectItem>)}</SelectContent>
               </Select></div>
-            <div className="space-y-1.5"><Label>نوع المحتوى</Label>
+            <div className="space-y-1.5"><Label>{tr("نوع المحتوى")}</Label>
               <Select value={type} onValueChange={setType} disabled={!canPublishLessons}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CONTENT_TYPES.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{CONTENT_TYPES.map((c) => <SelectItem key={c.id} value={c.id}>{tr(c.label)}</SelectItem>)}</SelectContent>
               </Select>
-              {!canPublishLessons && <p className="text-[11px] text-muted-foreground">الدروس للكتّاب المعتمدين؛ يمكنك نشر الملخصات.</p>}
+              {!canPublishLessons && <p className="text-[11px] text-muted-foreground">{tr("الدروس للكتّاب المعتمدين؛ يمكنك نشر الملخصات.")}</p>}
             </div>
-            <div className="space-y-1.5"><Label>الفصل الدراسي *</Label>
+            <div className="space-y-1.5"><Label>{tr("الفصل الدراسي *")}</Label>
               <Select value={semester} onValueChange={setSemester}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SEMESTERS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{SEMESTERS.map((s) => <SelectItem key={s.id} value={s.id}>{tr(s.label)}</SelectItem>)}</SelectContent>
               </Select></div>
-            <div className="space-y-1.5"><Label className="flex items-center gap-1">الميدان / المجال {ocrBusy && <ScanText className="size-3 animate-pulse text-primary" aria-label="جارٍ قراءة الصورة" />}</Label>
+            <div className="space-y-1.5"><Label className="flex items-center gap-1">{tr("الميدان / المجال")}{ocrBusy && <ScanText className="size-3 animate-pulse text-primary" aria-label={tr("جارٍ قراءة الصورة")} />}</Label>
               <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Gramática" /></div>
-            <div className="space-y-1.5"><Label className="flex items-center gap-1">الوحدة {ocrBusy && <ScanText className="size-3 animate-pulse text-primary" />}</Label>
+            <div className="space-y-1.5"><Label className="flex items-center gap-1">{tr("الوحدة")}{ocrBusy && <ScanText className="size-3 animate-pulse text-primary" />}</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unidad 1" /></div>
           </div>}
-          <div className="space-y-1.5"><Label htmlFor="summary-details">تفاصيل إضافية (اختياري)</Label><Textarea id="summary-details" value={description} onChange={e=>setDescription(e.target.value)} /></div>
-          <div className="space-y-1.5"><Label htmlFor="resource-links">روابط خارجية (اختياري)</Label><Textarea id="resource-links" dir="ltr" value={links} onChange={e=>setLinks(e.target.value)} placeholder="https://youtube.com/watch?v=…" /></div>
+          <div className="space-y-1.5"><Label htmlFor="summary-details">{tr("تفاصيل إضافية (اختياري)")}</Label><Textarea id="summary-details" value={description} onChange={e=>setDescription(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label htmlFor="resource-links">{tr("روابط خارجية (اختياري)")}</Label><Textarea id="resource-links" dir="ltr" value={links} onChange={e=>setLinks(e.target.value)} placeholder="https://youtube.com/watch?v=…" /></div>
           {canPublishLessons && <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={isCont} onCheckedChange={(v) => setIsCont(!!v)} disabled={roots.length === 0} />
-            تتمة / تابع لدرس سابق {roots.length === 0 && <span className="text-muted-foreground">(لا توجد دروس سابقة)</span>}
+            {tr("تتمة / تابع لدرس سابق")}{roots.length === 0 && <span className="text-muted-foreground">{tr("(لا توجد دروس سابقة)")}</span>}
           </label>}
           {canPublishLessons && isCont && (
             <Select value={parentId} onValueChange={setParentId}>
-              <SelectTrigger><SelectValue placeholder="اختر الدرس السابق" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={tr("اختر الدرس السابق")} /></SelectTrigger>
               <SelectContent>{roots.map((l) => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}</SelectContent>
             </Select>
           )}
           <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-5 cursor-pointer hover:bg-secondary text-sm text-muted-foreground">
-            <ImagePlus className="size-6" /> {canPublishLessons ? "إضافة صور صفحات الكراس" : "إضافة صور الملخص"}
+            <ImagePlus className="size-6" /> {canPublishLessons ? tr("إضافة صور صفحات الكراس") : tr("إضافة صور الملخص")}
             <input type="file" accept="image/*" multiple disabled={busy} className="hidden" onChange={(e) => {
               const added = Array.from(e.target.files ?? []).filter(f=>f.type.startsWith("image/"));
               const first = files.length === 0 ? added[0] : undefined;
@@ -904,23 +903,23 @@ function UploadDialog({ open, onOpenChange, userId, canPublishLessons, defaultSu
               e.target.value="";
             }} />
           </label>
-          {files.length > 1 && <label className="flex items-center gap-3 text-sm py-2"><Switch checked={grouped} disabled={busy || isCont} onCheckedChange={setGrouped} />{type === "summary" ? "تجميع كملخص واحد" : "تجميع كدرس واحد"}</label>}
+          {files.length > 1 && <label className="flex items-center gap-3 text-sm py-2"><Switch checked={grouped} disabled={busy || isCont} onCheckedChange={setGrouped} />{type === "summary" ? tr("تجميع كملخص واحد") : tr("تجميع كدرس واحد")}</label>}
           <ol className="space-y-2">
             {files.map((file,i)=><li key={`${file.name}-${i}`} className="flex flex-wrap items-center gap-1 rounded-md border p-2 text-sm">
               <span className="text-muted-foreground shrink-0">{i+1}</span><span className="flex-1 min-w-0 basis-[70%] truncate">{file.name}</span>
-              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={`تعديل الصورة ${i+1}`} onClick={()=>setEditing(i)}><Wand2 className="size-4"/></Button>
-              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===0} aria-label={`تقديم الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowUp className="size-4"/></Button>
-              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===files.length-1} aria-label={`تأخير الصفحة ${i+1}`} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowDown className="size-4"/></Button>
-              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={`حذف الصورة ${i+1}`} onClick={()=>{setFiles(prev=>prev.filter((_,j)=>j!==i));setEdits(prev=>prev.filter((_,j)=>j!==i));}}><X className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={tr(`تعديل الصورة ${i+1}`)} onClick={()=>setEditing(i)}><Wand2 className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===0} aria-label={tr(`تقديم الصفحة ${i+1}`)} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i-1];if(a && b){next[i-1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowUp className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy || i===files.length-1} aria-label={tr(`تأخير الصفحة ${i+1}`)} onClick={()=>{const sw=<T,>(prev:T[])=>{const next=[...prev];const a=next[i],b=next[i+1];if(a && b){next[i+1]=a;next[i]=b;}return next;};setFiles(sw);setEdits(sw);}}><ArrowDown className="size-4"/></Button>
+              <Button size="icon" variant="ghost" className="size-10" disabled={busy} aria-label={tr(`حذف الصورة ${i+1}`)} onClick={()=>{setFiles(prev=>prev.filter((_,j)=>j!==i));setEdits(prev=>prev.filter((_,j)=>j!==i));}}><X className="size-4"/></Button>
             </li>)}
           </ol>
-          {files.length > 0 && <p className="text-[11px] text-muted-foreground">تُحسَّن الصور تلقائياً (تباين ووضوح) وتُضغط بصيغة WebP. اضغط <Wand2 className="inline size-3"/> للقص والتدوير وتنظيف الخلفية.</p>}
+          {files.length > 0 && <p className="text-[11px] text-muted-foreground">{tr("تُحسَّن الصور تلقائياً (تباين ووضوح) وتُضغط بصيغة WebP. اضغط")}<Wand2 className="inline size-3"/> {tr("للقص والتدوير وتنظيف الخلفية.")}</p>}
           <ImageEditor file={editing !== null ? files[editing] ?? null : null} edits={editing !== null ? edits[editing] ?? DEFAULT_EDITS : DEFAULT_EDITS}
             open={editing !== null} onOpenChange={(o)=>{ if(!o) setEditing(null); }}
             onSave={(e)=>{ const i=editing; if(i!==null) setEdits(prev=>prev.map((x,j)=>j===i?e:x)); }} />
           {progress && <p role="status" className="text-sm text-muted-foreground">{progress}</p>}
           <Button className="w-full h-11" onClick={submit} disabled={busy}>
-            {busy && <Loader2 className="animate-spin size-4" />} {canPublishLessons ? "حفظ في الكراس" : "حفظ الملخص"}
+            {busy && <Loader2 className="animate-spin size-4" />} {canPublishLessons ? tr("حفظ في الكراس") : tr("حفظ الملخص")}
           </Button>
         </div>
       </DialogContent>

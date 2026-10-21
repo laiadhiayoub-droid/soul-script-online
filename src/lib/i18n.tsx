@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { translations } from "./translations";
 
 export const LANGS = [
   { id: "ar", label: "العربية", dir: "rtl" },
@@ -27,8 +28,18 @@ const STRINGS = {
 } satisfies Record<string, Record<Lang, string>>;
 export type StringKey = keyof typeof STRINGS;
 
-const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: StringKey) => string }>({
-  lang: "ar", setLang: () => {}, t: (k) => STRINGS[k].ar,
+let activeLang: Lang = "ar";
+export function tr(text: string, language: Lang = activeLang): string {
+  if (language === "ar") return text;
+  const index = language === "en" ? 0 : language === "fr" ? 1 : 2;
+  const exact = translations[text];
+  if (exact) return exact[index] ?? text;
+  // Translate fixed interface fragments without touching authored content.
+  return text.replace(/[\u0600-\u06ff]+(?:[ \u00a0]+[\u0600-\u06ff]+)*/g, fragment => translations[fragment]?.[index] ?? fragment);
+}
+
+const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: StringKey) => string; tr: (text: string) => string }>({
+  lang: "ar", setLang: () => {}, t: (k) => STRINGS[k].ar, tr: text => text,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -38,11 +49,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (saved && LANGS.some((l) => l.id === saved)) setLangState(saved);
   }, []);
   useEffect(() => {
-    const def = LANGS.find((l) => l.id === lang)!;
+    activeLang = lang;
+    const def = LANGS.find((l) => l.id === lang);
+    if (!def) return;
     document.documentElement.lang = lang;
     document.documentElement.dir = def.dir;
   }, [lang]);
-  const setLang = (l: Lang) => { localStorage.setItem("lang", l); setLangState(l); };
-  return <Ctx.Provider value={{ lang, setLang, t: (k) => STRINGS[k][lang] }}>{children}</Ctx.Provider>;
+  activeLang = lang;
+  const setLang = (l: Lang) => { localStorage.setItem("lang", l); activeLang = l; setLangState(l); };
+  return <Ctx.Provider value={{ lang, setLang, t: (k) => STRINGS[k][lang], tr: text => tr(text, lang) }}>{children}</Ctx.Provider>;
 }
 export const useI18n = () => useContext(Ctx);
