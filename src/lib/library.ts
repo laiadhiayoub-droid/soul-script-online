@@ -1,3 +1,5 @@
+import { tr } from "./i18n";
+
 export const SUBJECTS = [
   { id: "spanish", label: "اللغة الإسبانية", sub: "Lengua Española" },
   { id: "french", label: "اللغة الفرنسية", sub: "Langue Française" },
@@ -22,10 +24,10 @@ export const SEMESTERS = [
   { id: "s3", label: "الفصل الثالث" },
 ] as const;
 
-export const subjectLabel = (id: string) => SUBJECTS.find((s) => s.id === id)?.label ?? id;
-export const semesterLabel = (id: string | null) => SEMESTERS.find((s) => s.id === id)?.label ?? "";
+export const subjectLabel = (id: string) => tr(SUBJECTS.find((s) => s.id === id)?.label ?? id);
+export const semesterLabel = (id: string | null) => tr(SEMESTERS.find((s) => s.id === id)?.label ?? "");
 export const contentTypeLabel = (id: string) =>
-  CONTENT_TYPES.find((c) => c.id === id)?.label ?? id;
+  tr(CONTENT_TYPES.find((c) => c.id === id)?.label ?? id);
 
 /** Compress an image in the browser to a JPEG, max dimension `max`. */
 export async function compressImage(file: File, max = 1600, quality = 0.75): Promise<Blob> {
